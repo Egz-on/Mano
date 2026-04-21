@@ -55,7 +55,7 @@ class AuthService:
 
         auth_user_id = UserAuthId(str(uuid5(NAMESPACE_DNS, f"mano:{normalized_email}")))
 
-        existing_user = await self.user_service.user_repository.get_user_by_auth_user_id(auth_user_id)
+        existing_user = await self.user_service.find_user_by_auth_user_id(auth_user_id)
         if existing_user:
             raise EmailAlreadyRegisteredError("Email is already registered")
 
