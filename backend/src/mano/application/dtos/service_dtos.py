@@ -19,6 +19,11 @@ class CreateServiceRequest:
     price: float
     currency: str = "MKD"
     pricing_type: str = "fixed"
+    service_areas: list[str] | None = None
+    service_metadata: dict[str, Any] | None = None
+    images: list[str] | None = None
+    is_active: bool = True
+    is_featured: bool = False
 
 
 @dataclass(frozen=True)
