@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+from mano.domain.exceptions.base import ServiceNotFoundError
 from mano.domain.models.service_model import CategoryId, ProviderId, Service, ServiceId
 from mano.domain.repositories.service_repository import ServiceRepository
 from mano.infrastructure.database.models import ServiceModel
@@ -100,7 +101,7 @@ class SQLAlchemyServiceRepository(ServiceRepository):
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         if model is None:
-            raise ValueError(f"Service with ID {service.id} not found.")
+            raise ServiceNotFoundError(f"Service with ID {service.id} not found.")
 
         self._apply_domain_to_model(service, model)
         await self._session.flush()
