@@ -81,7 +81,6 @@ async def register(
                 company_name=payload.company_name,
             )
         )
-        await db_session.commit()
         return _build_login_response(result.email, result.full_name, result.role, settings)
     except EmailAlreadyRegisteredError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
@@ -101,7 +100,6 @@ async def login(
     _ = request
     result = await use_cases.login(LoginRequestDTO(email=str(payload.email), password=payload.password))
     if result is not None:
-        await db_session.commit()
         return _build_login_response(result.email, result.full_name, result.role, settings)
 
     # Backward compatibility for existing hardcoded demo users.
@@ -124,7 +122,6 @@ async def forgot_password(
     _ = request
     try:
         reset_token = await use_cases.forgot_password(ForgotPasswordRequestDTO(email=str(payload.email)))
-        await db_session.commit()
     except EmailDeliveryError as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 
@@ -147,7 +144,6 @@ async def reset_password(
         await use_cases.reset_password(
             ResetPasswordRequestDTO(token=payload.token, new_password=payload.new_password)
         )
-        await db_session.commit()
     except InvalidPasswordResetTokenError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except DomainError as exc:
