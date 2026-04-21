@@ -85,6 +85,13 @@ class UserService:
 
         return user
 
+    async def find_user_by_id(self, user_id: UserId) -> UserProfile | None:
+        """Return a user by ID without raising when missing."""
+        try:
+            return await self.get_user_by_id(user_id)
+        except UserNotFoundError:
+            return None
+
     async def get_user_by_auth_user_id(self, auth_user_id: UserAuthId) -> UserProfile:
         key = self._cache_key_auth(auth_user_id)
         if self.cache:
@@ -102,6 +109,13 @@ class UserService:
             await self.cache.set(self._cache_key(user.id), payload, ex=self._cache_ttl)
 
         return user
+
+    async def find_user_by_auth_user_id(self, auth_user_id: UserAuthId) -> UserProfile | None:
+        """Return a user by auth ID without raising when missing."""
+        try:
+            return await self.get_user_by_auth_user_id(auth_user_id)
+        except UserNotFoundError:
+            return None
 
     async def update_user_profile(self, user: UserProfile) -> UserProfile:
         result = await self.user_repository.update_user(user)
