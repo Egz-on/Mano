@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from typing import TypedDict
+from uuid import NAMESPACE_DNS, uuid5
 
 from jose import JWTError, jwt
 
@@ -15,6 +16,7 @@ class DemoUser(TypedDict):
     role: str
     phone: str
     city: str | None
+    auth_user_id: str
 
 
 DEMO_USERS: dict[str, DemoUser] = {
@@ -25,6 +27,7 @@ DEMO_USERS: dict[str, DemoUser] = {
         "role": "admin",
         "phone": "+38970111222",
         "city": "Skopje",
+        "auth_user_id": str(uuid5(NAMESPACE_DNS, "mano:admin@mano.com")),
     },
     "provider@mano.com": {
         "email": "provider@mano.com",
@@ -33,6 +36,16 @@ DEMO_USERS: dict[str, DemoUser] = {
         "role": "provider",
         "phone": "+38970222333",
         "city": "Tetovo",
+        "auth_user_id": "00000000-0000-0000-0000-000000000001",
+    },
+    "client@mano.com": {
+        "email": "client@mano.com",
+        "password": "client123",
+        "full_name": "Guest Client",
+        "role": "client",
+        "phone": "+38970333444",
+        "city": "Skopje",
+        "auth_user_id": str(uuid5(NAMESPACE_DNS, "mano:client@mano.com")),
     },
 }
 
