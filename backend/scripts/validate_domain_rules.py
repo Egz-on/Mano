@@ -8,7 +8,7 @@ from pathlib import Path
 def validate_domain_rules():
     """Validate domain business rules are properly implemented."""
     project_root = Path(__file__).parent.parent
-    domain_dir = project_root / "src" / "workmate" / "domain"
+    domain_dir = project_root / "src" / "mano" / "domain"
 
     if not domain_dir.exists():
         print("Domain directory not found")
@@ -30,7 +30,7 @@ def validate_domain_rules():
         sys.exit(1)
 
     # Check for business rules in constants
-    constants_file = project_root / "src" / "workmate" / "common" / "constans.py"
+    constants_file = project_root / "src" / "mano" / "common" / "constans.py"
     if constants_file.exists():
         with open(constants_file) as f:
             content = f.read()

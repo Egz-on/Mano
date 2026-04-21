@@ -71,7 +71,7 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_PASSWORD: postgres # pragma: allowlist secret
-          POSTGRES_DB: workmate_test
+          POSTGRES_DB: mano_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -94,7 +94,7 @@ jobs:
       # Test database configuration
       DB_HOST: localhost
       DB_PORT: 5432
-      DB_NAME: workmate_test
+      DB_NAME: mano_test
       DB_USER: postgres
       DB_PASSWORD: postgres # pragma: allowlist secret
 
@@ -177,14 +177,14 @@ jobs:
         with:
           context: .
           push: false
-          tags: workmate:ci-${{ github.sha }}
+          tags: mano:ci-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: 🔍 Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: workmate:ci-${{ github.sha }}
+          image-ref: mano:ci-${{ github.sha }}
           format: "sarif"
           output: "trivy-results.sarif"
 

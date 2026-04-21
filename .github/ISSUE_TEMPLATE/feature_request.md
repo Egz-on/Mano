@@ -1,6 +1,6 @@
 ---
 name: ✨ Feature Request
-about: Suggest a new feature or enhancement for Workmate
+about: Suggest a new feature or enhancement for Mano
 title: '[FEATURE] '
 labels: ['enhancement', 'needs-triage']
 assignees: ['vnz']

@@ -1,6 +1,6 @@
 ---
 name: 🐛 Bug Report
-about: Report a bug to help us improve Workmate
+about: Report a bug to help us improve Mano
 title: '[BUG] '
 labels: ['bug', 'needs-triage']
 assignees: ['vnz']

@@ -1,16 +1,16 @@
 {
     "id": "prod-environment",
-    "name": "Workmate Production",
+    "name": "Mano Production",
     "values": [
         {
             "key": "baseUrl",
-            "value": "https://api.workmate.com",
+            "value": "https://api.mano.com",
             "type": "default",
             "enabled": true
         },
         {
             "key": "authApiUrl",
-            "value": "https://api.workmate.com/api/v1/auth",
+            "value": "https://api.mano.com/api/v1/auth",
             "type": "default",
             "enabled": true
         },

@@ -8,10 +8,10 @@ from datetime import datetime
 sys.path.append(os.path.join(os.path.dirname(__file__), "../src"))
 
 from sqlalchemy.future import select
-from workmate.infrastructure.database.connection import Database
-from workmate.infrastructure.database.models import CategoryModel, ServiceModel, UserProfileModel
-from workmate.domain.models.user import UserRole
-from workmate.infrastructure.config.settings import get_settings
+from mano.infrastructure.database.connection import Database
+from mano.infrastructure.database.models import CategoryModel, ServiceModel, UserProfileModel
+from mano.domain.models.user import UserRole
+from mano.infrastructure.config.settings import get_settings
 
 async def seed_data():
     settings = get_settings()

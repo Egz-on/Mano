@@ -99,7 +99,7 @@ jobs:
 
     environment:
       name: staging
-      url: https://workmate-staging.example.com
+      url: https://mano-staging.example.com
 
     steps:
       - name: 📥 Checkout Code
@@ -109,7 +109,7 @@ jobs:
         run: |
           echo "🎭 Deploying to Staging Environment"
           echo "📦 Image: ${{ needs.build-and-push.outputs.image }}"
-          echo "🔗 URL: https://workmate-staging.example.com"
+          echo "🔗 URL: https://mano-staging.example.com"
 
           # TODO: Replace with actual deployment commands
           # Examples:
@@ -124,8 +124,8 @@ jobs:
           echo "🧪 Running smoke tests against staging..."
 
           # TODO: Add actual smoke tests
-          # curl -f https://workmate-staging.example.com/health
-          # pytest tests/smoke/ --base-url=https://workmate-staging.example.com
+          # curl -f https://mano-staging.example.com/health
+          # pytest tests/smoke/ --base-url=https://mano-staging.example.com
 
           echo "✅ Smoke tests passed"
 
@@ -139,7 +139,7 @@ jobs:
               deployment_id: context.payload.deployment?.id || 0,
               state: 'success',
               environment: 'staging',
-              environment_url: 'https://workmate-staging.example.com',
+              environment_url: 'https://mano-staging.example.com',
               description: 'Staging deployment successful'
             });
 
@@ -154,7 +154,7 @@ jobs:
 
     environment:
       name: production
-      url: https://workmate.example.com
+      url: https://mano.example.com
 
     steps:
       - name: 📥 Checkout Code
@@ -175,7 +175,7 @@ jobs:
         run: |
           echo "🚀 Deploying to Production Environment"
           echo "📦 Image: ${{ needs.build-and-push.outputs.image }}"
-          echo "🔗 URL: https://workmate.example.com"
+          echo "🔗 URL: https://mano.example.com"
 
           # TODO: Replace with actual production deployment commands
           # Examples:
@@ -190,7 +190,7 @@ jobs:
           echo "🏥 Running production health checks..."
 
           # TODO: Add actual health checks
-          # timeout 300 bash -c 'until curl -f https://workmate.example.com/health; do sleep 10; done'
+          # timeout 300 bash -c 'until curl -f https://mano.example.com/health; do sleep 10; done'
 
           echo "✅ Production health checks passed"
 
@@ -215,7 +215,7 @@ jobs:
               deployment_id: context.payload.deployment?.id || 0,
               state: 'success',
               environment: 'production',
-              environment_url: 'https://workmate.example.com',
+              environment_url: 'https://mano.example.com',
               description: 'Production deployment successful'
             });
 
@@ -230,7 +230,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `🎉 **Release ${release.tag_name} Deployed!** 🚀\n\n` +
-                    `✅ **Production URL:** https://workmate.example.com\n` +
+                    `✅ **Production URL:** https://mano.example.com\n` +
                     `📦 **Docker Image:** \`${{ needs.build-and-push.outputs.image }}\`\n` +
                     `🔗 **Release Notes:** ${release.html_url}\n\n` +
                     `---\n` +

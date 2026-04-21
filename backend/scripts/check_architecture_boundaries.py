@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check hexagonal architecture boundaries in the WorkMate platform.
+"""Check hexagonal architecture boundaries in the Mano platform.
 
 Ensures proper separation between domain, application, infrastructure,
 and web layers according to hexagonal architecture principles.
@@ -67,32 +67,32 @@ MODERN_PYTHON_RULES = {
             # Long if/elif chains that could use match/case
             r"if.*==.*elif.*==",
         ],
-        "workmate": "Consider using match/case instead of if/elif with isinstance",
+        "mano": "Consider using match/case instead of if/elif with isinstance",
     },
     "avoid_magic_numbers": {
         "forbidden_patterns": [
             # Numbers with 2+ digits not in variable names
             r"[^a-zA-Z0-9_]\d{2,}[^a-zA-Z0-9_]",
         ],
-        "workmate": "Consider using constants or value objects instead of magic numbers",
+        "mano": "Consider using constants or value objects instead of magic numbers",
     },
     "use_str_enums": {
         "forbidden_patterns": [
             r"class.*Enum\):",  # Old-style Enum instead of StrEnum
         ],
-        "workmate": "Consider using StrEnum instead of Enum for string values",
+        "mano": "Consider using StrEnum instead of Enum for string values",
     },
     "avoid_any_types": {
         "forbidden_patterns": [
             r":\s*Any(?![a-zA-Z])",  # Type annotation with Any
             r"dict\[str,\s*Any\]",  # dict[str, Any] patterns
         ],
-        "workmate": "Avoid using Any types, be more specific where possible",
+        "mano": "Avoid using Any types, be more specific where possible",
     },
 }
 
-# Domain-specific rules for WorkMate
-WORKMATE_DOMAIN_RULES = {
+# Domain-specific rules for Mano
+MANO_DOMAIN_RULES = {
     # Domain services should not import repository implementations
     "domain/services": {
         "forbidden_patterns": [
@@ -149,7 +149,7 @@ class ArchitectureBoundaryChecker:
     def __init__(self, enable_modern_checks: bool = True) -> None:
         self.violations: list[tuple[str, int, str]] = []
         self.warnings: list[tuple[str, int, str]] = []
-        self.workmates: list[tuple[str, int, str]] = []
+        self.manos: list[tuple[str, int, str]] = []
         self.enable_modern_checks = enable_modern_checks
 
     def check_file(self, file_path: Path) -> bool:
@@ -200,7 +200,7 @@ class ArchitectureBoundaryChecker:
             if part in ["domain", "application", "infrastructure", "web"]:
                 return part
 
-        # Check for common patterns in WorkMate
+        # Check for common patterns in Mano
         path_str = str(file_path).lower()
         if "main.py" in path_str or "api" in path_str or "routers" in path_str:
             return "web"
@@ -254,7 +254,7 @@ class ArchitectureBoundaryChecker:
         self, file_path: Path, node: ast.AST, layer: str, rules: dict[str, Any], module_name: str
     ) -> None:
         """Check internal layer imports within the project."""
-        if not (module_name.startswith("workmate.") or module_name.startswith("...")):
+        if not (module_name.startswith("mano.") or module_name.startswith("...")):
             return
 
         for forbidden_layer in rules.get("forbidden_internal", set()):
@@ -381,7 +381,7 @@ class ArchitectureBoundaryChecker:
         """Check domain-specific architectural rules."""
         path_str = str(file_path)
 
-        for pattern, rules in WORKMATE_DOMAIN_RULES.items():
+        for pattern, rules in MANO_DOMAIN_RULES.items():
             if pattern in path_str:
                 lines = content.split("\n")
 
@@ -423,11 +423,11 @@ class ArchitectureBoundaryChecker:
                         if stripped_line.startswith("#") or '"""' in stripped_line or "'''" in stripped_line:
                             continue
 
-                        self.workmates.append(
+                        self.manos.append(
                             (
                                 str(file_path),
                                 line_num,
-                                f"{rule_config['workmate']}: {line.strip()}",
+                                f"{rule_config['mano']}: {line.strip()}",
                             )
                         )
 
@@ -488,13 +488,13 @@ class ArchitectureBoundaryChecker:
         list[tuple[str, int, str]],
     ]:
         """Get checking results."""
-        return self.violations, self.warnings, self.workmates
+        return self.violations, self.warnings, self.manos
 
 
 def _create_argument_parser() -> argparse.ArgumentParser:
     """Create and configure the argument parser."""
     parser = argparse.ArgumentParser(
-        description="Check hexagonal architecture boundaries and code quality for WorkMate"
+        description="Check hexagonal architecture boundaries and code quality for Mano"
     )
     parser.add_argument("files", nargs="*", help="Files to check")
     parser.add_argument(
@@ -503,9 +503,9 @@ def _create_argument_parser() -> argparse.ArgumentParser:
         help="Disable modern Python pattern checks",
     )
     parser.add_argument(
-        "--workmates-only",
+        "--manos-only",
         action="store_true",
-        help="Only show workmates, not violations or warnings",
+        help="Only show manos, not violations or warnings",
     )
     parser.add_argument(
         "--verbose",
@@ -550,36 +550,36 @@ def _print_warnings(warnings: list) -> None:
         print(f"  {location}: {message}")
 
 
-def _print_workmates(workmates: list) -> None:
-    """Print workmates."""
-    if not workmates:
+def _print_manos(manos: list) -> None:
+    """Print manos."""
+    if not manos:
         return
 
-    print("\n💡 Code modernization workmates:")
-    for file_path_str, line_num, message in workmates:
+    print("\n💡 Code modernization manos:")
+    for file_path_str, line_num, message in manos:
         location = f"{file_path_str}:{line_num}" if line_num > 0 else file_path_str
         print(f"  {location}: {message}")
 
 
-def _print_results(violations: list, warnings: list, workmates: list, args: argparse.Namespace) -> int:
+def _print_results(violations: list, warnings: list, manos: list, args: argparse.Namespace) -> int:
     """Print the checking results and return appropriate exit code."""
     exit_code = 0
 
-    if not args.workmates_only:
+    if not args.manos_only:
         exit_code = _print_violations(violations)
         _print_warnings(warnings)
 
-    if workmates and not args.no_modern_checks:
-        _print_workmates(workmates)
+    if manos and not args.no_modern_checks:
+        _print_manos(manos)
 
     return exit_code
 
 
 def _print_summary(
-    violations: list, warnings: list, workmates: list, files_checked: int, args: argparse.Namespace
+    violations: list, warnings: list, manos: list, files_checked: int, args: argparse.Namespace
 ) -> None:
     """Print summary information."""
-    if not violations and not warnings and not workmates:
+    if not violations and not warnings and not manos:
         print(f"✅ All checks passed for {files_checked} files")
         return
 
@@ -588,9 +588,9 @@ def _print_summary(
         print(f"  Files checked: {files_checked}")
         print(f"  Violations: {len(violations)}")
         print(f"  Warnings: {len(warnings)}")
-        print(f"  workmates: {len(workmates)}")
+        print(f"  manos: {len(manos)}")
 
-    if violations and not args.workmates_only:
+    if violations and not args.manos_only:
         print("\n🏗️ Hexagonal architecture principles:")
         print("  - Domain: No external dependencies, only business logic")
         print("  - Application: Orchestrates domain, no infrastructure imports")
@@ -610,10 +610,10 @@ def main() -> int:
         print(f"🔍 Checking {len(files_to_check)} Python files...")
 
     files_checked = sum(1 for file_path in files_to_check if checker.check_file(file_path))
-    violations, warnings, workmates = checker.get_results()
+    violations, warnings, manos = checker.get_results()
 
-    exit_code = _print_results(violations, warnings, workmates, args)
-    _print_summary(violations, warnings, workmates, files_checked, args)
+    exit_code = _print_results(violations, warnings, manos, args)
+    _print_summary(violations, warnings, manos, files_checked, args)
 
     return exit_code
 

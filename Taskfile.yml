@@ -1,12 +1,12 @@
 version: '3'
 
 vars:
-  PROJECT_NAME: workmate
+  PROJECT_NAME: mano
   DOCKER_COMPOSE: docker-compose
   UV: uv
   PYTHON: python
   SRC_DIR: backend/src
-  TEST_DIR: backend/src/workmate/tests
+  TEST_DIR: backend/src/mano/tests
 
 tasks:
   default:
@@ -40,7 +40,7 @@ tasks:
       - |
         echo "Setup complete! API available at http://localhost:8000"
         echo "API docs: http://localhost:8000/docs"
-        echo "PgAdmin: http://localhost:5050 (admin@workmate.com / admin123)"
+        echo "PgAdmin: http://localhost:5050 (admin@mano.com / admin123)"
         echo "Mailpit: http://localhost:8025"
 
   reset:
@@ -55,9 +55,9 @@ tasks:
       - |
         if [ ! -f .env ]; then
           echo "SECRET_KEY=change_this" > .env
-          echo "POSTGRES_USER=workmate" >> .env
-          echo "POSTGRES_PASSWORD=workmate123" >> .env
-          echo "POSTGRES_DB=workmate_db" >> .env
+          echo "POSTGRES_USER=mano" >> .env
+          echo "POSTGRES_PASSWORD=mano123" >> .env
+          echo "POSTGRES_DB=mano_db" >> .env
           echo ".env created"
         else
           echo ".env already exists"
@@ -294,7 +294,7 @@ tasks:
   db-shell:
     desc: Connect to PostgreSQL shell
     cmds:
-      - "{{.DOCKER_COMPOSE}} exec db psql -U workmate -d workmate_db"
+      - "{{.DOCKER_COMPOSE}} exec db psql -U mano -d mano_db"
 
   db-query:
     desc: Run SQL query
@@ -305,7 +305,7 @@ tasks:
           echo "Usage: task db:query SQL=\"SELECT * FROM users;\""
           exit 1
         fi
-        {{.DOCKER_COMPOSE}} exec -T db psql -U workmate -d workmate_db -c "{{.SQL}}"
+        {{.DOCKER_COMPOSE}} exec -T db psql -U mano -d mano_db -c "{{.SQL}}"
 
   db-seed:
     desc: Seed database with sample data
@@ -316,7 +316,7 @@ tasks:
   db-clear:
     desc: Clear all suggestions from database
     cmds:
-      - "{{.DOCKER_COMPOSE}} exec -T db psql -U workmate -d workmate_db -c \"DELETE FROM suggestions;\""
+      - "{{.DOCKER_COMPOSE}} exec -T db psql -U mano -d mano_db -c \"DELETE FROM suggestions;\""
 
   # ==========================
   # Docker Commands
@@ -449,7 +449,7 @@ tasks:
     desc: Show architecture and code modernization suggestions
     dir: backend
     cmds:
-      - "{{.UV}} run python scripts/check_architecture_boundaries.py --workmates-only"
+      - "{{.UV}} run python scripts/check_architecture_boundaries.py --manos-only"
 
   arch-analyze-deps:
     desc: Analyze and visualize project dependencies
@@ -492,19 +492,19 @@ tasks:
     desc: List all API endpoints
     dir: backend
     cmds:
-      - "{{.UV}} run python -c 'from fastapi.openapi.utils import get_openapi; import json; from workmate.main import app; schema = get_openapi(title=app.title, version=app.version, routes=app.routes); [print(f\"{method.upper()} {path}\") for path, methods in schema.get(\"paths\", {}).items() for method in methods.keys()]'"
+      - "{{.UV}} run python -c 'from fastapi.openapi.utils import get_openapi; import json; from mano.main import app; schema = get_openapi(title=app.title, version=app.version, routes=app.routes); [print(f\"{method.upper()} {path}\") for path, methods in schema.get(\"paths\", {}).items() for method in methods.keys()]'"
 
   endpoints-json:
     desc: List all API endpoints as JSON
     dir: backend
     cmds:
-      - "{{.UV}} run python -c 'from fastapi.openapi.utils import get_openapi; import json; from workmate.main import app; schema = get_openapi(title=app.title, version=app.version, routes=app.routes); print(json.dumps(schema.get(\"paths\", {}), indent=2))'"
+      - "{{.UV}} run python -c 'from fastapi.openapi.utils import get_openapi; import json; from mano.main import app; schema = get_openapi(title=app.title, version=app.version, routes=app.routes); print(json.dumps(schema.get(\"paths\", {}), indent=2))'"
 
   endpoints-markdown:
     desc: List all API endpoints as Markdown
     dir: backend
     cmds:
-      - "{{.UV}} run python -c 'from fastapi.openapi.utils import get_openapi; from workmate.main import app; schema = get_openapi(title=app.title, version=app.version, routes=app.routes); [print(f\"## {path}\\n\\n{chr(10).join([f\"- **{method.upper()}**\" for method in methods.keys()])}\\n\") for path, methods in schema.get(\"paths\", {}).items()]'"
+      - "{{.UV}} run python -c 'from fastapi.openapi.utils import get_openapi; from mano.main import app; schema = get_openapi(title=app.title, version=app.version, routes=app.routes); [print(f\"## {path}\\n\\n{chr(10).join([f\"- **{method.upper()}**\" for method in methods.keys()])}\\n\") for path, methods in schema.get(\"paths\", {}).items()]'"
 
   # ==========================
   # Newman/Postman Testing
@@ -519,7 +519,7 @@ tasks:
     cmds:
       - |
         if command -v newman &> /dev/null; then
-          newman run postman/Workmate_API_Collection.json -e postman/environment.local.json
+          newman run postman/Mano_API_Collection.json -e postman/environment.local.json
         else
           echo "Newman not installed. Run: task newman:install"
         fi
@@ -529,7 +529,7 @@ tasks:
     cmds:
       - |
         if command -v newman &> /dev/null; then
-          newman run postman/Workmate_API_Collection.json -e postman/environment.local.json --reporters cli,html,json
+          newman run postman/Mano_API_Collection.json -e postman/environment.local.json --reporters cli,html,json
         else
           echo "Newman not installed. Run: task newman:install"
         fi
@@ -539,7 +539,7 @@ tasks:
     cmds:
       - |
         if command -v newman &> /dev/null; then
-          newman run postman/Workmate_API_Collection.json -e postman/environment.prod.json
+          newman run postman/Mano_API_Collection.json -e postman/environment.prod.json
         else
           echo "Newman not installed. Run: task newman:install"
         fi

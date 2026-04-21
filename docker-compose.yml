@@ -1,20 +1,20 @@
 services:
   # ==========================
-  # 🐘 PostgreSQL (WorkMate DB)
+  # 🐘 PostgreSQL (Mano DB)
   # ==========================
   db:
     image: postgres:16-alpine
-    container_name: workmate_db
+    container_name: mano_db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-workmate}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-workmate123}
-      POSTGRES_DB: ${POSTGRES_DB:-workmate_db}
+      POSTGRES_USER: ${POSTGRES_USER:-mano}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mano123}
+      POSTGRES_DB: ${POSTGRES_DB:-mano_db}
     ports:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-workmate} -d ${POSTGRES_DB:-workmate_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mano} -d ${POSTGRES_DB:-mano_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,7 +24,7 @@ services:
   # ==========================
   redis:
     image: redis:7-alpine
-    container_name: workmate_redis
+    container_name: mano_redis
     ports:
       - "6379:6379"
     volumes:
@@ -40,20 +40,20 @@ services:
   # ==========================
   mailpit:
     image: axllent/mailpit:latest
-    container_name: workmate_mailpit
+    container_name: mano_mailpit
     ports:
       - "1025:1025"
       - "8025:8025"
     restart: unless-stopped
 
   # ==========================
-  # 📊 PgAdmin for WorkMate
+  # 📊 PgAdmin for Mano
   # ==========================
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: workmate_pgadmin
+    container_name: mano_pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@workmate.com}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@mano.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
@@ -70,21 +70,21 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: workmate_app
+    container_name: mano_app
     ports:
       - "8000:8000"
     environment:
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: ${POSTGRES_DB:-workmate_db}
-      DB_USER: ${POSTGRES_USER:-workmate}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-workmate123}
+      DB_NAME: ${POSTGRES_DB:-mano_db}
+      DB_USER: ${POSTGRES_USER:-mano}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-mano123}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
-      SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-noreply@workmate.local}
-      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-Workmate}
+      SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-noreply@mano.local}
+      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-Mano}
       ENVIRONMENT: development
       DEBUG: "true"
       SECRET_KEY: ${SECRET_KEY:-change_this_secret_key}

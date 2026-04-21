@@ -1,6 +1,6 @@
 {
     "id": "local-environment",
-    "name": "Workmate Local",
+    "name": "Mano Local",
     "values": [
         {
             "key": "baseUrl",
@@ -34,7 +34,7 @@
         },
         {
             "key": "testUserEmail",
-            "value": "admin@workmate.com",
+            "value": "admin@mano.com",
             "type": "default",
             "enabled": true
         },

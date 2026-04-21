@@ -9,10 +9,10 @@ from datetime import datetime
 sys.path.append(os.path.join(os.path.dirname(__file__), "../src"))
 
 from sqlalchemy.future import select
-from workmate.infrastructure.database.connection import Database
-from workmate.infrastructure.database.models import UserProfileModel
-from workmate.domain.models.user import UserRole
-from workmate.infrastructure.config.settings import get_settings
+from mano.infrastructure.database.connection import Database
+from mano.infrastructure.database.models import UserProfileModel
+from mano.domain.models.user import UserRole
+from mano.infrastructure.config.settings import get_settings
 
 # Admin auth ID fetched from database
 ADMIN_AUTH_ID = "54fdddee-907a-42f6-a274-cb171a8f14c9"

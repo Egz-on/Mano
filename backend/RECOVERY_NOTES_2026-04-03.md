@@ -21,12 +21,12 @@ The backend was in a partially migrated state:
 
 Files:
 
-- `src/workmate/domain/models/user.py`
-- `src/workmate/application/dtos/user_dtos.py`
-- `src/workmate/application/use_cases/user_use_cases.py`
-- `src/workmate/domain/repositories/user_repository.py`
-- `src/workmate/domain/services/user_service.py`
-- `src/workmate/infrastructure/repositories/sqlalchemy_user_repository.py`
+- `src/mano/domain/models/user.py`
+- `src/mano/application/dtos/user_dtos.py`
+- `src/mano/application/use_cases/user_use_cases.py`
+- `src/mano/domain/repositories/user_repository.py`
+- `src/mano/domain/services/user_service.py`
+- `src/mano/infrastructure/repositories/sqlalchemy_user_repository.py`
 
 What changed:
 
@@ -46,8 +46,8 @@ Why:
 
 Files:
 
-- `src/workmate/domain/repositories/auth_repository.py`
-- `src/workmate/domain/exceptions/base.py`
+- `src/mano/domain/repositories/auth_repository.py`
+- `src/mano/domain/exceptions/base.py`
 
 What changed:
 
@@ -66,8 +66,8 @@ Why:
 
 Files:
 
-- `src/workmate/dependencies.py`
-- `src/workmate/infrastructure/factories.py`
+- `src/mano/dependencies.py`
+- `src/mano/infrastructure/factories.py`
 
 What changed:
 
@@ -92,7 +92,7 @@ Why:
 
 Files:
 
-- `src/workmate/infrastructure/database/models.py`
+- `src/mano/infrastructure/database/models.py`
 
 What changed:
 
@@ -111,7 +111,7 @@ Why:
 
 Files:
 
-- `src/workmate/main.py`
+- `src/mano/main.py`
 
 What changed:
 
@@ -128,7 +128,7 @@ Why:
 
 Files:
 
-- `src/workmate/infrastructure/config/settings.py`
+- `src/mano/infrastructure/config/settings.py`
 
 What changed:
 

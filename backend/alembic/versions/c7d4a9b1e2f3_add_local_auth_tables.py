@@ -11,7 +11,7 @@ from collections.abc import Sequence
 
 from alembic import op
 import sqlalchemy as sa
-from workmate.infrastructure.database.models import GUID
+from mano.infrastructure.database.models import GUID
 
 
 # revision identifiers, used by Alembic.

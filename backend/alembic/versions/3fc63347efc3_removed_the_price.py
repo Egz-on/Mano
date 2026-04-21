@@ -18,7 +18,7 @@ revision: str = "3fc63347efc3"
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
-from workmate.infrastructure.database.models import GUID
+from mano.infrastructure.database.models import GUID
 
 
 def upgrade() -> None:

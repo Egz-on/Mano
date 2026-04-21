@@ -236,7 +236,7 @@ repos:
         pass_filenames: false
 
   # ========================================
-  # Workmate Specific
+  # Mano Specific
   # ========================================
   - repo: local
     hooks:
@@ -270,7 +270,7 @@ repos:
       # Run fast unit tests on commit
       - id: pytest-unit
         name: pytest (unit tests only)
-        entry: uv run --directory backend pytest src/workmate/tests/unit/ -v --tb=short
+        entry: uv run --directory backend pytest src/mano/tests/unit/ -v --tb=short
         language: system
         types: [python]
         stages: [pre-commit]
@@ -301,7 +301,7 @@ repos:
     rev: v2.14
     hooks:
       - id: vulture
-        args: [backend/src/, backend/src/workmate/tests/, --min-confidence=80]
+        args: [backend/src/, backend/src/mano/tests/, --min-confidence=80]
         exclude: ^backend/alembic/
 
   # Code complexity monitoring

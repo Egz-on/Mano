@@ -15,7 +15,7 @@ from alembic import context
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # Import our models metadata
-from workmate.infrastructure.database.models import Base
+from mano.infrastructure.database.models import Base
 
 # this is the Alembic Config object
 config = context.config

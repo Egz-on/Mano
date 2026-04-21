@@ -1,4 +1,4 @@
-# 🎯 WorkMate
+# 🎯 Mano
 
 ## *Modern Service Marketplace API*
 
@@ -51,9 +51,9 @@
 ## 📂 Project Structure
 
 ```text
-workmate/
+mano/
 │
-├── 📁 src/workmate/
+├── 📁 src/mano/
 │   ├── 🎯 domain/              # Core business logic & entities
 │   ├── 🔄 application/         # Use cases & orchestration
 │   ├── 🏗️ infrastructure/      # DB, repositories, config
@@ -100,7 +100,7 @@ task setup
 ```bash
 # 1️⃣ Clone the repository
 git clone <your-repo-url>
-cd workmate
+cd mano
 
 # 2️⃣ Install dependencies
 task install-dev
@@ -269,7 +269,7 @@ We love contributions! Here's how to get started:
 ### Recommended Stack
 
 ```text
-User → WorkMate API → PostgreSQL
+User → Mano API → PostgreSQL
                   ↘ Redis Cache
 ```
 
@@ -329,6 +329,6 @@ Built with ❤️ using:
 
 ---
 
-**[⬆ Back to Top](#-workmate)**
+**[⬆ Back to Top](#-mano)**
 
-Made with ❤️ by the WorkMate Team
+Made with ❤️ by the Mano Team

@@ -1,7 +1,7 @@
 [project]
-name = "workmate"
+name = "mano"
 version = "0.1.0"
-description = "Workmate"
+description = "Mano"
 authors = [
     {name = "Egzon", email = "egzonameti99@gmail.com"}
 ]
@@ -58,7 +58,7 @@ build-backend = "hatchling.build"
 
 [tool.pyright]
 pythonPath = "python"
-extraPaths = ["src/workmate"]
+extraPaths = ["src/mano"]
 
 [tool.mypy]
 mypy_path = "src"
@@ -80,23 +80,23 @@ exclude = ["alembic/"]
 
 [[tool.mypy.overrides]]
 module = [
-    "workmate.infrastructure.database.*",
-    "src.workmate.infrastructure.database.*",
+    "mano.infrastructure.database.*",
+    "src.mano.infrastructure.database.*",
 ]
 ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = [
-    "workmate.infrastructure.repositories.*",
-    "src.workmate.infrastructure.repositories.*",
+    "mano.infrastructure.repositories.*",
+    "src.mano.infrastructure.repositories.*",
 ]
 ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = [
     "tests.*",
-    "workmate.tests.*",
-    "src.workmate.tests.*",
+    "mano.tests.*",
+    "src.mano.tests.*",
 ]
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
@@ -121,7 +121,7 @@ exclude_dirs = ["tests", "alembic"]
 skips = ["B101", "B608"]
 
 [tool.vulture]
-paths = ["src/workmate"]
+paths = ["src/mano"]
 exclude = ["tests/", "alembic/", ".venv/", "__pycache__/"]
 min_confidence = 60
 
