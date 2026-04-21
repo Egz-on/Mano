@@ -70,17 +70,9 @@ class UserUseCases:
             company_name=request.company_name,
         )
         if request.role is not None:
-            updated_user = UserProfile(
-                **{**updated_user.__dict__, "role": request.role, "updated_at": datetime.now(UTC)}
-            )
+            updated_user = updated_user.change_role(request.role)
         if request.profile_metadata is not None:
-            updated_user = UserProfile(
-                **{
-                    **updated_user.__dict__,
-                    "profile_metadata": request.profile_metadata,
-                    "updated_at": datetime.now(UTC),
-                }
-            )
+            updated_user = updated_user.replace_profile_metadata(request.profile_metadata)
 
         saved = await self.user_service.update_user_profile(updated_user)
         return UserResponse.from_domain(saved)
