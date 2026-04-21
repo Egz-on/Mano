@@ -1,0 +1,49 @@
+{
+    "id": "prod-environment",
+    "name": "Workmate Production",
+    "values": [
+        {
+            "key": "baseUrl",
+            "value": "https://api.workmate.com",
+            "type": "default",
+            "enabled": true
+        },
+        {
+            "key": "authApiUrl",
+            "value": "https://api.workmate.com/api/v1/auth",
+            "type": "default",
+            "enabled": true
+        },
+        {
+            "key": "apiVersion",
+            "value": "v1",
+            "type": "default",
+            "enabled": true
+        },
+        {
+            "key": "clientId",
+            "value": "{{PROD_CLIENT_ID}}",
+            "type": "default",
+            "enabled": true
+        },
+        {
+            "key": "clientSecret",
+            "value": "{{PROD_CLIENT_SECRET}}",
+            "type": "secret",
+            "enabled": true
+        },
+        {
+            "key": "testUserEmail",
+            "value": "{{PROD_TEST_EMAIL}}",
+            "type": "default",
+            "enabled": true
+        },
+        {
+            "key": "testUserPassword",
+            "value": "{{PROD_TEST_PASSWORD}}",
+            "type": "secret",
+            "enabled": true
+        }
+    ],
+    "_postman_variable_scope": "environment"
+}

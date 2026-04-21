@@ -1,0 +1,903 @@
+version: '3'
+
+vars:
+  PROJECT_NAME: workmate
+  DOCKER_COMPOSE: docker-compose
+  UV: uv
+  PYTHON: python
+  SRC_DIR: backend/src
+  TEST_DIR: backend/src/workmate/tests
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  # ==========================
+  # Setup & Installation
+  # ==========================
+  install:
+    desc: Install dependencies with UV
+    dir: backend
+    cmds:
+      - "{{.UV}} sync"
+
+  install-dev:
+    desc: Install all dependencies including dev with UV
+    dir: backend
+    cmds:
+      - "{{.UV}} sync --extra dev"
+
+  setup:
+    desc: Complete project setup with Docker
+    cmds:
+      - task: install-dev
+      - task: env
+      - task: docker:build
+      - task: docker:up
+      - task: db:upgrade
+      - |
+        echo "Setup complete! API available at http://localhost:8000"
+        echo "API docs: http://localhost:8000/docs"
+        echo "PgAdmin: http://localhost:5050 (admin@workmate.com / admin123)"
+        echo "Mailpit: http://localhost:8025"
+
+  reset:
+    desc: Reset project (clean + reinstall)
+    cmds:
+      - task: clean
+      - task: install-dev
+
+  env:
+    desc: Create .env file with development defaults
+    cmds:
+      - |
+        if [ ! -f .env ]; then
+          echo "SECRET_KEY=change_this" > .env
+          echo "POSTGRES_USER=workmate" >> .env
+          echo "POSTGRES_PASSWORD=workmate123" >> .env
+          echo "POSTGRES_DB=workmate_db" >> .env
+          echo ".env created"
+        else
+          echo ".env already exists"
+        fi
+
+  env-check:
+    desc: Check environment variables and configuration
+    cmds:
+      - |
+        if [ -f .env ]; then
+          echo ".env file exists"
+          echo "Environment variables:"
+          grep -v "^#" .env | grep -v "^$$" || echo "No variables set"
+        else
+          echo ".env file not found"
+          exit 1
+        fi
+
+  # ==========================
+  # Development
+  # ==========================
+
+  dev:
+    desc: "Start all services in development mode (Docker)"
+    cmds:
+      - "{{.DOCKER_COMPOSE}} up"
+
+  dev:backend:
+    desc: "Start backend development server locally with UV"
+    dir: backend
+    cmds:
+      - "{{.UV}} run uvicorn {{.PROJECT_NAME}}.main:app --reload --host 0.0.0.0 --port 8000"
+
+  shell:
+    desc: Access Python shell with UV
+    dir: backend
+    cmds:
+      - "{{.UV}} run python"
+
+  health:
+    desc: Complete application health check
+    cmds:
+      - curl -f http://localhost:8000/health || echo "Health check failed"
+
+  status:
+    desc: Show service status
+    cmds:
+      - "{{.DOCKER_COMPOSE}} ps"
+
+  clean:
+    desc: Clean temporary files and caches
+    cmds:
+      - find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+      - find . -type f -name "*.pyc" -delete 2>/dev/null || true
+      - find . -type f -name "*.pyo" -delete 2>/dev/null || true
+      - find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+      - find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+      - find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
+      - find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
+      - rm -rf .coverage htmlcov/ coverage.xml 2>/dev/null || true
+      - rm -rf dist/ build/ 2>/dev/null || true
+
+  # ==========================
+  # Testing
+  # ==========================
+  test:
+    desc: Run all tests with UV
+    dir: backend
+    cmds:
+      - "{{.UV}} run pytest"
+
+  test-unit:
+    desc: Run unit tests only
+    dir: backend
+    cmds:
+      - "{{.UV}} run pytest {{.TEST_DIR}}/unit"
+
+  test-integration:
+    desc: Run integration tests only
+    dir: backend
+    cmds:
+      - "{{.UV}} run pytest {{.TEST_DIR}}/integration"
+
+  test-e2e:
+    desc: Run end-to-end tests only
+    dir: backend
+    cmds:
+      - "{{.UV}} run pytest {{.TEST_DIR}}/e2e"
+
+  test-cov:
+    desc: Run tests with coverage report
+    dir: backend
+    cmds:
+      - "{{.UV}} run pytest --cov={{.SRC_DIR}} --cov-report=html --cov-report=term"
+
+  test-watch:
+    desc: Run tests in watch mode
+    dir: backend
+    cmds:
+      - "{{.UV}} run ptw"
+
+  api-test:
+    desc: Run comprehensive API tests
+    cmds:
+      - task: newman:test
+
+  api-test-full:
+    desc: Complete API testing with detailed reports
+    cmds:
+      - task: newman:test-full
+
+  # ==========================
+  # Code Quality
+  # ==========================
+  format:
+    desc: Format code with Black and Ruff
+    dir: backend
+    cmds:
+      - "{{.UV}} run black ."
+      - "{{.UV}} run ruff check . --fix"
+
+  lint:
+    desc: Run linting checks
+    dir: backend
+    cmds:
+      - "{{.UV}} run ruff check ."
+      - "{{.UV}} run black --check ."
+
+  typecheck:
+    desc: Run type checking with mypy
+    dir: backend
+    cmds:
+      - "{{.UV}} run mypy {{.SRC_DIR}}/"
+
+  security:
+    desc: Run comprehensive security audit
+    dir: backend
+    cmds:
+      - "{{.UV}} run bandit -r {{.SRC_DIR}}/"
+      - "{{.UV}} run safety check || true"
+
+  quality:
+    desc: Run all code quality checks
+    dir: backend
+    cmds:
+      - task: lint
+      - task: typecheck
+      - task: security
+
+  pre-commit:
+    desc: Run all pre-commit hooks
+    dir: backend
+    cmds:
+      - "{{.UV}} run pre-commit run --all-files"
+
+  pre-commit-install:
+    desc: Install pre-commit hooks
+    dir: backend
+    cmds:
+      - "{{.UV}} run pre-commit install"
+
+  generate-jwt-secret:
+    desc: Generate cryptographically secure JWT secret
+    cmds:
+      - "{{.UV}} run python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+
+  validate-jwt-secret:
+    desc: Validate current JWT secret strength
+    cmds:
+      - |
+        if [ -f .env ]; then
+          SECRET=$(grep SECRET_KEY .env | cut -d'=' -f2)
+          if [ ${#SECRET} -ge 32 ]; then
+            echo "JWT secret is strong (${#SECRET} characters)"
+          else
+            echo "JWT secret should be at least 32 characters"
+          fi
+        else
+          echo ".env file not found"
+        fi
+
+  # ==========================
+  # Database Operations
+  # ==========================
+  db-upgrade:
+    desc: Run database migrations
+    cmds:
+      - echo "Running database migrations..."
+      - "{{.DOCKER_COMPOSE}} exec -T app {{.UV}} run alembic upgrade head"
+
+  db-migration:
+    desc: Create new database migration
+    cmds:
+      - |
+        if [ -z "{{.MESSAGE}}" ]; then
+          echo "ERROR: MESSAGE is required"
+          echo "Usage: task db:migration MESSAGE=\"your migration description\""
+          exit 1
+        fi
+        {{.DOCKER_COMPOSE}} exec app {{.UV}} run alembic revision --autogenerate -m "{{.MESSAGE}}"
+
+  db-downgrade:
+    desc: Rollback database migration
+    cmds:
+      - echo "Rolling back last migration..."
+      - "{{.DOCKER_COMPOSE}} exec app {{.UV}} run alembic downgrade -1"
+
+  db-reset:
+    desc: Reset database (WARNING destructive)
+    cmds:
+      - |
+        echo "WARNING: This will delete all data!"
+        read -p "Are you sure? [y/N] " -n 1 -r
+        echo
+        if [[ $$REPLY =~ ^[Yy]$$ ]]; then
+          {{.DOCKER_COMPOSE}} down -v
+          {{.DOCKER_COMPOSE}} up -d db redis
+          sleep 5
+          {{.DOCKER_COMPOSE}} up -d app
+          sleep 3
+          task db:upgrade
+        fi
+
+  db-history:
+    desc: Show migration history
+    cmds:
+      - "{{.DOCKER_COMPOSE}} exec app {{.UV}} run alembic history"
+
+  db-current:
+    desc: Show current migration status
+    cmds:
+      - "{{.DOCKER_COMPOSE}} exec app {{.UV}} run alembic current"
+
+  db-shell:
+    desc: Connect to PostgreSQL shell
+    cmds:
+      - "{{.DOCKER_COMPOSE}} exec db psql -U workmate -d workmate_db"
+
+  db-query:
+    desc: Run SQL query
+    cmds:
+      - |
+        if [ -z "{{.SQL}}" ]; then
+          echo "ERROR: SQL is required"
+          echo "Usage: task db:query SQL=\"SELECT * FROM users;\""
+          exit 1
+        fi
+        {{.DOCKER_COMPOSE}} exec -T db psql -U workmate -d workmate_db -c "{{.SQL}}"
+
+  db-seed:
+    desc: Seed database with sample data
+    cmds:
+      - echo "Seeding database..."
+      - "{{.UV}} run python -c 'print(\"Seed script not implemented yet\")'"
+
+  db-clear:
+    desc: Clear all suggestions from database
+    cmds:
+      - "{{.DOCKER_COMPOSE}} exec -T db psql -U workmate -d workmate_db -c \"DELETE FROM suggestions;\""
+
+  # ==========================
+  # Docker Commands
+  # ==========================
+  docker-build:
+    desc: Build Docker images
+    cmds:
+      - echo "Building Docker images..."
+      - "{{.DOCKER_COMPOSE}} build"
+
+  docker-up:
+    desc: Start all services in DEVELOPMENT mode (with hot reloading)
+    cmds:
+      - echo "Starting services (DEV mode)..."
+      - "{{.DOCKER_COMPOSE}} up -d"
+
+  docker-up-prod:
+    desc: Start all services in PRODUCTION mode
+    cmds:
+      - echo "Starting services (PRODUCTION mode)..."
+      - "{{.DOCKER_COMPOSE}} up -d"
+
+  docker-down:
+    desc: Stop all services
+    cmds:
+      - echo "Stopping services..."
+      - "{{.DOCKER_COMPOSE}} down"
+
+  docker-restart:
+    desc: Restart all services
+    cmds:
+      - task: docker:down
+      - task: docker:up
+
+  docker-logs:
+    desc: Show all service logs
+    cmds:
+      - "{{.DOCKER_COMPOSE}} logs -f"
+
+  docker-clean:
+    desc: Clean Docker resources
+    cmds:
+      - docker system prune -af
+      - docker volume prune -f
+
+  docker-security:
+    desc: Run Docker security scans
+    cmds:
+      - docker scout cves {{.PROJECT_NAME}} || true
+
+  docker-lint:
+    desc: Lint Dockerfile and Docker Compose
+    cmds:
+      - hadolint Dockerfile || echo "hadolint not installed, skipping"
+      - docker compose config --quiet || echo "Docker Compose validation"
+
+  docker-nuke:
+    desc: DESTROY EVERYTHING - Complete project teardown (DESTRUCTIVE!)
+    cmds:
+      - |
+        echo "WARNING: This will DESTROY EVERYTHING!"
+        read -p "Are you absolutely sure? Type 'DESTROY' to confirm: " -r
+        echo
+        if [[ $$REPLY == "DESTROY" ]]; then
+          {{.DOCKER_COMPOSE}} down -v --remove-orphans
+          docker system prune -af --volumes
+          echo "Everything has been destroyed"
+        else
+          echo "Cancelled"
+        fi
+
+  logs:
+    desc: Alias for docker:logs
+    cmds:
+      - task: docker:logs
+
+  logs-follow:
+    desc: Alias for docker:logs-follow
+    cmds:
+      - task: docker:logs-follow
+
+  logs-app:
+    desc: Alias for docker:logs-app
+    cmds:
+      - task: docker:logs-app
+
+  logs-db:
+    desc: View database logs
+    cmds:
+      - "{{.DOCKER_COMPOSE}} logs -f db"
+
+  logs-redis:
+    desc: View Redis logs
+    cmds:
+      - "{{.DOCKER_COMPOSE}} logs -f redis"
+
+  logs-tail:
+    desc: View last 100 lines of application logs
+    cmds:
+      - "{{.DOCKER_COMPOSE}} logs --tail=100 app"
+
+  logs-errors:
+    desc: View only ERROR and CRITICAL logs
+    cmds:
+      - "{{.DOCKER_COMPOSE}} logs app | grep -iE '(error|critical)' || echo 'No errors found'"
+
+  nuke:
+    desc: DESTROY EVERYTHING (DESTRUCTIVE!)
+    cmds:
+      - task: docker:nuke
+
+  # ==========================
+  # Architecture & Code Quality
+  # ==========================
+  arch-check:
+    desc: Check hexagonal architecture boundaries
+    dir: backend
+    cmds:
+      - "{{.UV}} run python scripts/check_architecture_boundaries.py"
+
+  arch-fix:
+    desc: Interactive architecture boundary fixing guidance
+    dir: backend
+    cmds:
+      - echo "Running architecture check..."
+      - "{{.UV}} run python scripts/check_architecture_boundaries.py"
+      - echo "Review violations above and fix them manually"
+
+  arch-suggestions:
+    desc: Show architecture and code modernization suggestions
+    dir: backend
+    cmds:
+      - "{{.UV}} run python scripts/check_architecture_boundaries.py --workmates-only"
+
+  arch-analyze-deps:
+    desc: Analyze and visualize project dependencies
+    dir: backend
+    cmds:
+      - "{{.UV}} run pipdeptree || {{.UV}} run python -m pip install pipdeptree && {{.UV}} run pipdeptree"
+
+  modernize:
+    desc: Modernize codebase (dry-run)
+    cmds:
+      - task: arch:suggestions
+      - |
+        echo "This is a dry-run. Use 'task modernize-live' to apply changes."
+
+  modernize-live:
+    desc: Apply codebase modernization changes
+    cmds:
+      - |
+        echo "This would apply modernization changes"
+        echo "Review suggestions first with: task modernize"
+
+  visualize:
+    desc: Alias for arch:analyze-deps
+    cmds:
+      - task: arch:analyze-deps
+
+  # ==========================
+  # Documentation
+  # ==========================
+  docs:
+    desc: Show available API documentation
+    cmds:
+      - |
+        echo "API Documentation:"
+        echo "  Swagger UI: http://localhost:8000/docs"
+        echo "  ReDoc: http://localhost:8000/redoc"
+        echo "  OpenAPI JSON: http://localhost:8000/openapi.json"
+
+  endpoints:
+    desc: List all API endpoints
+    dir: backend
+    cmds:
+      - "{{.UV}} run python -c 'from fastapi.openapi.utils import get_openapi; import json; from workmate.main import app; schema = get_openapi(title=app.title, version=app.version, routes=app.routes); [print(f\"{method.upper()} {path}\") for path, methods in schema.get(\"paths\", {}).items() for method in methods.keys()]'"
+
+  endpoints-json:
+    desc: List all API endpoints as JSON
+    dir: backend
+    cmds:
+      - "{{.UV}} run python -c 'from fastapi.openapi.utils import get_openapi; import json; from workmate.main import app; schema = get_openapi(title=app.title, version=app.version, routes=app.routes); print(json.dumps(schema.get(\"paths\", {}), indent=2))'"
+
+  endpoints-markdown:
+    desc: List all API endpoints as Markdown
+    dir: backend
+    cmds:
+      - "{{.UV}} run python -c 'from fastapi.openapi.utils import get_openapi; from workmate.main import app; schema = get_openapi(title=app.title, version=app.version, routes=app.routes); [print(f\"## {path}\\n\\n{chr(10).join([f\"- **{method.upper()}**\" for method in methods.keys()])}\\n\") for path, methods in schema.get(\"paths\", {}).items()]'"
+
+  # ==========================
+  # Newman/Postman Testing
+  # ==========================
+  newman-install:
+    desc: Install Newman CLI for Postman collection testing
+    cmds:
+      - npm install -g newman || echo "⚠️ npm not found, install Node.js first"
+
+  newman-test:
+    desc: Run Postman collection with Newman (basic)
+    cmds:
+      - |
+        if command -v newman &> /dev/null; then
+          newman run postman/Workmate_API_Collection.json -e postman/environment.local.json
+        else
+          echo "Newman not installed. Run: task newman:install"
+        fi
+
+  newman-test-full:
+    desc: Run Postman collection with Newman (detailed reports)
+    cmds:
+      - |
+        if command -v newman &> /dev/null; then
+          newman run postman/Workmate_API_Collection.json -e postman/environment.local.json --reporters cli,html,json
+        else
+          echo "Newman not installed. Run: task newman:install"
+        fi
+
+  newman-test-prod:
+    desc: Run Postman collection against production
+    cmds:
+      - |
+        if command -v newman &> /dev/null; then
+          newman run postman/Workmate_API_Collection.json -e postman/environment.prod.json
+        else
+          echo "Newman not installed. Run: task newman:install"
+        fi
+
+  newman-test-workflow:
+    desc: Run complete workflow test
+    cmds:
+      - task: newman:test-full
+
+  # ==========================
+  # Namespaced Tasks
+  # ==========================
+  arch:analyze-deps:
+    desc: Analyze and visualize project dependencies
+    cmds:
+      - task: arch-analyze-deps
+
+  arch:check:
+    desc: Check hexagonal architecture boundaries
+    cmds:
+      - task: arch-check
+
+  arch:fix:
+    desc: Interactive architecture boundary fixing guidance
+    cmds:
+      - task: arch-fix
+
+  arch:modernize:
+    desc: Modernize codebase (dry-run)
+    cmds:
+      - task: modernize
+
+  arch:modernize-live:
+    desc: Apply codebase modernization changes
+    cmds:
+      - task: modernize-live
+
+  arch:suggestions:
+    desc: Show architecture and code modernization suggestions
+    cmds:
+      - task: arch-suggestions
+
+  db:clear:
+    desc: Clear all suggestions from database
+    cmds:
+      - task: db-clear
+
+  db:current:
+    desc: Show current migration status
+    cmds:
+      - task: db-current
+
+  db:downgrade:
+    desc: Rollback database migration
+    cmds:
+      - task: db-downgrade
+
+  db:history:
+    desc: Show migration history
+    cmds:
+      - task: db-history
+
+  db:migration:
+    desc: Create new database migration (use task db:migration MESSAGE="description")
+    cmds:
+      - task: db-migration
+
+  db:query:
+    desc: Run SQL query (use task db:query SQL="SELECT * FROM suggestions;")
+    cmds:
+      - task: db-query
+
+  db:reset:
+    desc: Reset database (WARNING destructive)
+    cmds:
+      - task: db-reset
+
+  db:seed:
+    desc: Seed database with sample data
+    cmds:
+      - task: db-seed
+
+  db:shell:
+    desc: Connect to PostgreSQL shell
+    cmds:
+      - task: db-shell
+
+  db:upgrade:
+    desc: Run database migrations
+    cmds:
+      - task: db-upgrade
+
+  dev:clean:
+    desc: Clean temporary files and caches
+    cmds:
+      - task: clean
+
+  dev:health:
+    desc: Complete application health check
+    cmds:
+      - task: health
+
+  dev:reset:
+    desc: Reset project (clean + reinstall)
+    cmds:
+      - task: reset
+
+  dev:server:
+    desc: Start development server locally with UV
+    cmds:
+      - task: dev
+
+  dev:shell:
+    desc: Access Python shell with UV
+    cmds:
+      - task: shell
+
+  dev:status:
+    desc: Show service status
+    cmds:
+      - task: status
+
+  docker:build:
+    desc: Build Docker images
+    cmds:
+      - task: docker-build
+
+  docker:clean:
+    desc: Clean Docker resources
+    cmds:
+      - task: docker-clean
+
+  docker:down:
+    desc: Stop all services
+    cmds:
+      - task: docker-down
+
+  docker:lint:
+    desc: Lint Dockerfile and Docker Compose
+    cmds:
+      - task: docker-lint
+
+  docker:logs:
+    desc: Show all service logs
+    cmds:
+      - task: docker-logs
+
+  docker:logs-app:
+    desc: Show application logs only
+    cmds:
+      - "{{.DOCKER_COMPOSE}} logs -f app"
+
+  docker:logs-app-follow:
+    desc: Follow application logs only (live)
+    cmds:
+      - "{{.DOCKER_COMPOSE}} logs -f app"
+
+  docker:logs-db:
+    desc: View database logs
+    cmds:
+      - task: logs-db
+
+  docker:logs-debug:
+    desc: View debug logs with timestamps
+    cmds:
+      - "{{.DOCKER_COMPOSE}} logs -f --timestamps app"
+
+  docker:logs-errors:
+    desc: View only ERROR and CRITICAL logs
+    cmds:
+      - task: logs-errors
+
+  docker:logs-follow:
+    desc: Follow all service logs (live)
+    cmds:
+      - task: docker-logs
+
+  docker:logs-redis:
+    desc: View Redis logs
+    cmds:
+      - task: logs-redis
+
+  docker:logs-requests:
+    desc: View HTTP request logs
+    cmds:
+      - "{{.DOCKER_COMPOSE}} logs app | grep -E '(GET|POST|PUT|DELETE|PATCH)' || echo 'No request logs found'"
+
+  docker:logs-tail:
+    desc: View last 100 lines of application logs
+    cmds:
+      - task: logs-tail
+
+  docker:nuke:
+    desc: DESTROY EVERYTHING - Complete project teardown (DESTRUCTIVE!)
+    cmds:
+      - task: docker-nuke
+
+  docker:restart:
+    desc: Restart all services
+    cmds:
+      - task: docker-restart
+
+  docker:security:
+    desc: Run Docker security scans
+    cmds:
+      - task: docker-security
+
+  docker:up:
+    desc: Start all services
+    cmds:
+      - task: docker-up
+
+  docs:endpoints:
+    desc: List all API endpoints
+    cmds:
+      - task: endpoints
+
+  docs:endpoints-json:
+    desc: List all API endpoints as JSON
+    cmds:
+      - task: endpoints-json
+
+  docs:endpoints-markdown:
+    desc: List all API endpoints as Markdown
+    cmds:
+      - task: endpoints-markdown
+
+  docs:show:
+    desc: Show available API documentation
+    cmds:
+      - task: docs
+
+  newman:api-test:
+    desc: Run comprehensive API tests
+    cmds:
+      - task: api-test
+
+  newman:api-test-full:
+    desc: Complete API testing with detailed reports
+    cmds:
+      - task: api-test-full
+
+  newman:install:
+    desc: Install Newman CLI for Postman collection testing
+    cmds:
+      - task: newman-install
+
+  newman:test:
+    desc: Run Postman collection with Newman (basic)
+    cmds:
+      - task: newman-test
+
+  newman:test-full:
+    desc: Run Postman collection with Newman (detailed reports)
+    cmds:
+      - task: newman-test-full
+
+  newman:test-workflow:
+    desc: Run complete workflow test
+    cmds:
+      - task: newman-test-workflow
+
+  quality:all:
+    desc: Run all code quality checks
+    cmds:
+      - task: quality
+
+  quality:format:
+    desc: Format code with Black and Ruff
+    cmds:
+      - task: format
+
+  quality:generate-jwt-secret:
+    desc: Generate cryptographically secure JWT secret
+    cmds:
+      - task: generate-jwt-secret
+
+  quality:lint:
+    desc: Run linting checks
+    cmds:
+      - task: lint
+
+  quality:pre-commit:
+    desc: Run all pre-commit hooks
+    cmds:
+      - task: pre-commit
+
+  quality:security:
+    desc: Run comprehensive security audit
+    cmds:
+      - task: security
+
+  quality:typecheck:
+    desc: Run type checking with mypy
+    cmds:
+      - task: typecheck
+
+  quality:validate-jwt-secret:
+    desc: Validate current JWT secret strength
+    cmds:
+      - task: validate-jwt-secret
+
+  setup:env:
+    desc: Create .env file with development defaults
+    cmds:
+      - task: env
+
+  setup:env-check:
+    desc: Check environment variables and configuration
+    cmds:
+      - task: env-check
+
+  setup:install:
+    desc: Install dependencies with UV
+    cmds:
+      - task: install
+
+  setup:install-dev:
+    desc: Install all dependencies including dev with UV
+    cmds:
+      - task: install-dev
+
+  setup:pre-commit-install:
+    desc: Install pre-commit hooks
+    cmds:
+      - task: pre-commit-install
+
+  setup:setup:
+    desc: Complete project setup with Docker
+    cmds:
+      - task: setup
+
+  test:all:
+    desc: Run all tests with UV
+    cmds:
+      - task: test
+
+  test:cov:
+    desc: Run tests with coverage report
+    cmds:
+      - task: test-cov
+
+  test:e2e:
+    desc: Run end-to-end tests only
+    cmds:
+      - task: test-e2e
+
+  test:integration:
+    desc: Run integration tests only
+    cmds:
+      - task: test-integration
+
+  test:unit:
+    desc: Run unit tests only
+    cmds:
+      - task: test-unit
+
+  test:watch:
+    desc: Run tests in watch mode
+    cmds:
+      - task: test-watch

@@ -1,0 +1,133 @@
+[project]
+name = "workmate"
+version = "0.1.0"
+description = "Workmate"
+authors = [
+    {name = "Egzon", email = "egzonameti99@gmail.com"}
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.120.0",
+    "uvicorn[standard]>=0.37.0",
+    "pydantic[email]>=2.12.3",
+    "pydantic-settings>=2.11.0",
+    "sqlalchemy>=2.0.44",
+    "alembic>=1.16.5",
+    "asyncpg>=0.30.0",
+    "redis>=6.4.0",
+    "httpx>=0.27.0",
+    "structlog>=25.5.0",
+    "python-multipart>=0.0.22",
+    "python-jose[cryptography]>=3.5.0",
+    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=5.0.0",
+    "stripe>=13.0.1",
+    "python-dotenv>=1.2.1",
+    "slowapi>=0.1.9",
+    "urllib3>=2.6.3",
+    "cloudinary>=1.44.1",
+    "pyasn1>=0.6.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
+    "pytest-watch>=4.2.0",
+    "pre-commit>=4.3.0",
+    "black>=25.9.0",
+    "pylint>=4.0.2",
+    "ruff>=0.14.0",
+    "mypy>=1.13.0",
+    "typing-extensions>=4.12.2",
+    "factory-boy>=3.3.0",
+    "freezegun>=1.5.0",
+    "pytest-mock>=3.14.0",
+    "pytest-xdist>=3.6.0",
+    "aiosqlite>=0.21.0",
+    "greenlet>=3.2.4",
+    "psycopg2-binary>=2.9.11",
+    "radon>=6.0.1",
+    "detect-secrets>=1.5.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pyright]
+pythonPath = "python"
+extraPaths = ["src/workmate"]
+
+[tool.mypy]
+mypy_path = "src"
+explicit_package_bases = true
+python_version = "3.13"
+strict = true
+ignore_missing_imports = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_unreachable = true
+show_error_codes = true
+exclude = ["alembic/"]
+
+[[tool.mypy.overrides]]
+module = [
+    "workmate.infrastructure.database.*",
+    "src.workmate.infrastructure.database.*",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+    "workmate.infrastructure.repositories.*",
+    "src.workmate.infrastructure.repositories.*",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+    "tests.*",
+    "workmate.tests.*",
+    "src.workmate.tests.*",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+warn_return_any = false
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+asyncio_mode = "auto"
+
+[tool.black]
+line-length = 120
+target-version = ['py313']
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+exclude = ["alembic/", ".venv/", "__pycache__/"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "alembic"]
+skips = ["B101", "B608"]
+
+[tool.vulture]
+paths = ["src/workmate"]
+exclude = ["tests/", "alembic/", ".venv/", "__pycache__/"]
+min_confidence = 60
+
+[dependency-groups]
+dev = [
+    "check-jsonschema>=0.36.0",
+    "licensecheck>=2025.1.0",
+    "pip-audit>=2.10.0",
+]

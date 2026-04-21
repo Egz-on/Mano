@@ -1,0 +1,39 @@
+# Markdownlint configuration
+# https://github.com/DavidAnson/markdownlint
+
+# Line length
+MD013:
+  line_length: 120
+  code_blocks: false
+  tables: false
+  headings: false
+
+# First line heading
+MD041: false
+
+# Heading increment
+MD001: false
+
+# Emphasis as heading
+MD036: false
+
+# Inline HTML
+MD033: false
+
+# Fenced code language
+MD040: false
+
+# No trailing punctuation in headings
+MD026: false
+
+# List item indentation
+MD007:
+  indent: 2
+
+# Unordered list style
+MD004:
+  style: dash
+
+# Ordered list item prefix
+MD029:
+  style: ordered

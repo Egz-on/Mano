@@ -1,0 +1,44 @@
+# Code Owners for Suggestify
+# These owners will be requested for review when someone opens a pull request.
+# Order is important; the last matching pattern takes the most precedence.
+
+# Default owners for everything in the repo
+* @visar
+
+# CI/CD and DevOps
+/.github/ @Egzon
+/Makefile @Egzon
+/Dockerfile @Egzon
+/docker-compose*.yml @Egzon
+/.pre-commit-config.yaml @Egzon
+
+# Python dependencies and configuration
+/pyproject.toml @visar
+/poetry.lock @visar
+
+# Database and migrations
+/alembic/ @Egzon
+/alembic.ini @Egzon
+
+# Documentation
+/README.md @Egzon
+/ARCHITECTURE.md @Egzon
+*.md @Egzon
+
+# Core application code
+/src/ @Egzon
+
+# Domain layer (business logic) - requires careful review
+/src/suggestify/domain/ @Egzon
+
+# Infrastructure changes - requires infrastructure knowledge
+/src/suggestify/infrastructure/ @Egzon
+
+# Tests
+/tests/ @Egzon
+
+# Configuration files
+*.yml @Egzon
+*.yaml @Egzon
+*.toml @Egzon
+*.ini @Egzon

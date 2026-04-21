@@ -1,0 +1,55 @@
+{
+    "id": "local-environment",
+    "name": "Workmate Local",
+    "values": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8000",
+            "type": "default",
+            "enabled": true
+        },
+        {
+            "key": "authApiUrl",
+            "value": "http://localhost:8000/api/v1/auth",
+            "type": "default",
+            "enabled": true
+        },
+        {
+            "key": "apiVersion",
+            "value": "v1",
+            "type": "default",
+            "enabled": true
+        },
+        {
+            "key": "clientId",
+            "value": "",
+            "type": "default",
+            "enabled": false
+        },
+        {
+            "key": "clientSecret",
+            "value": "",
+            "type": "secret",
+            "enabled": false
+        },
+        {
+            "key": "testUserEmail",
+            "value": "admin@workmate.com",
+            "type": "default",
+            "enabled": true
+        },
+        {
+            "key": "testUserPassword",
+            "value": "MyV3ryStr0ng!Workm@te2024#Admin",
+            "type": "secret",
+            "enabled": true
+        },
+        {
+            "key": "accessToken",
+            "value": "dev-token-admin",
+            "type": "default",
+            "enabled": true
+        }
+    ],
+    "_postman_variable_scope": "environment"
+}

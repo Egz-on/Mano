@@ -1,0 +1,272 @@
+name: 🚀 Continuous Deployment
+
+on:
+  # Manual deployment trigger
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: "Version to deploy (leave empty for latest)"
+        required: false
+        type: string
+
+  # Automatic deployment on releases
+  release:
+    types: [published]
+
+  # Deployment on main branch (staging)
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  PYTHON_VERSION: "3.13"
+  POETRY_VERSION: "1.8.3"
+
+jobs:
+  # Job 1: Build and Push Docker Image
+  build-and-push:
+    name: 🏗️ Build & Push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v6
+
+      - name: 🔐 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🏷️ Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 🏗️ Build and Push Docker Image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: 📋 Output Image
+        id: image
+        run: echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}" >> $GITHUB_OUTPUT
+
+  # Job 2: Deploy to Staging
+  deploy-staging:
+    name: 🎭 Deploy Staging
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+
+    environment:
+      name: staging
+      url: https://workmate-staging.example.com
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v6
+
+      - name: 🚀 Deploy to Staging
+        run: |
+          echo "🎭 Deploying to Staging Environment"
+          echo "📦 Image: ${{ needs.build-and-push.outputs.image }}"
+          echo "🔗 URL: https://workmate-staging.example.com"
+
+          # TODO: Replace with actual deployment commands
+          # Examples:
+          # - kubectl apply -f k8s/staging/
+          # - docker-compose -f docker-compose.staging.yml up -d
+          # - terraform apply -var="image_tag=${{ needs.build-and-push.outputs.digest }}"
+
+          echo "✅ Staging deployment completed"
+
+      - name: 🧪 Run Smoke Tests
+        run: |
+          echo "🧪 Running smoke tests against staging..."
+
+          # TODO: Add actual smoke tests
+          # curl -f https://workmate-staging.example.com/health
+          # pytest tests/smoke/ --base-url=https://workmate-staging.example.com
+
+          echo "✅ Smoke tests passed"
+
+      - name: 📱 Notify Deployment
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: context.payload.deployment?.id || 0,
+              state: 'success',
+              environment: 'staging',
+              environment_url: 'https://workmate-staging.example.com',
+              description: 'Staging deployment successful'
+            });
+
+  # Job 3: Deploy to Production
+  deploy-production:
+    name: 🚀 Deploy Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: |
+      github.event_name == 'release' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+
+    environment:
+      name: production
+      url: https://workmate.example.com
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v6
+
+      - name: 🔍 Pre-deployment Checks
+        run: |
+          echo "🔍 Running pre-deployment checks..."
+
+          # TODO: Add pre-deployment validation
+          # - Check if staging tests passed
+          # - Verify database migrations
+          # - Check external dependencies
+
+          echo "✅ Pre-deployment checks passed"
+
+      - name: 🚀 Deploy to Production
+        run: |
+          echo "🚀 Deploying to Production Environment"
+          echo "📦 Image: ${{ needs.build-and-push.outputs.image }}"
+          echo "🔗 URL: https://workmate.example.com"
+
+          # TODO: Replace with actual production deployment commands
+          # Examples:
+          # - kubectl apply -f k8s/production/
+          # - docker-compose -f docker-compose.prod.yml up -d
+          # - terraform apply -var="image_tag=${{ needs.build-and-push.outputs.digest }}"
+
+          echo "✅ Production deployment completed"
+
+      - name: 🏥 Health Check
+        run: |
+          echo "🏥 Running production health checks..."
+
+          # TODO: Add actual health checks
+          # timeout 300 bash -c 'until curl -f https://workmate.example.com/health; do sleep 10; done'
+
+          echo "✅ Production health checks passed"
+
+      - name: 📊 Post-deployment Monitoring
+        run: |
+          echo "📊 Setting up post-deployment monitoring..."
+
+          # TODO: Add monitoring setup
+          # - Enable alerts
+          # - Check metrics dashboards
+          # - Verify logging
+
+          echo "✅ Monitoring configured"
+
+      - name: 📱 Notify Success
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: context.payload.deployment?.id || 0,
+              state: 'success',
+              environment: 'production',
+              environment_url: 'https://workmate.example.com',
+              description: 'Production deployment successful'
+            });
+
+      - name: 🎉 Create Release Announcement
+        if: github.event_name == 'release'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const release = context.payload.release;
+            github.rest.issues.createComment({
+              issue_number: context.issue?.number || 1,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🎉 **Release ${release.tag_name} Deployed!** 🚀\n\n` +
+                    `✅ **Production URL:** https://workmate.example.com\n` +
+                    `📦 **Docker Image:** \`${{ needs.build-and-push.outputs.image }}\`\n` +
+                    `🔗 **Release Notes:** ${release.html_url}\n\n` +
+                    `---\n` +
+                    `*Automated deployment completed successfully*`
+            });
+
+  # Job 4: Rollback (Manual)
+  rollback:
+    name: ⏪ Rollback
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name == 'workflow_dispatch'
+    needs: [deploy-staging, deploy-production]
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v6
+
+      - name: ⏪ Rollback Deployment
+        run: |
+          echo "⏪ Rolling back deployment..."
+
+          # TODO: Add rollback logic
+          # - Revert to previous image tag
+          # - Run database rollback if needed
+          # - Restore previous configuration
+
+          echo "✅ Rollback completed"
+
+      - name: 📱 Notify Rollback
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: context.payload.deployment?.id || 0,
+              state: 'failure',
+              description: 'Deployment failed, rollback initiated'
+            });

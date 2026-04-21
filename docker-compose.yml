@@ -1,0 +1,108 @@
+services:
+  # ==========================
+  # 🐘 PostgreSQL (WorkMate DB)
+  # ==========================
+  db:
+    image: postgres:16-alpine
+    container_name: workmate_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-workmate}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-workmate123}
+      POSTGRES_DB: ${POSTGRES_DB:-workmate_db}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-workmate} -d ${POSTGRES_DB:-workmate_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================
+  # 🧠 Redis Cache
+  # ==========================
+  redis:
+    image: redis:7-alpine
+    container_name: workmate_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================
+  # 📬 Mailpit (Local Email Inbox)
+  # ==========================
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: workmate_mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    restart: unless-stopped
+
+  # ==========================
+  # 📊 PgAdmin for WorkMate
+  # ==========================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: workmate_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@workmate.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+
+  # ==========================
+  # 🚀 FastAPI Application
+  # ==========================
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: workmate_app
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-workmate_db}
+      DB_USER: ${POSTGRES_USER:-workmate}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-workmate123}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-noreply@workmate.local}
+      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-Workmate}
+      ENVIRONMENT: development
+      DEBUG: "true"
+      SECRET_KEY: ${SECRET_KEY:-change_this_secret_key}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/alembic:/app/alembic
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+  redis_data:

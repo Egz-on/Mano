@@ -1,0 +1,52 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+
+# Poetry
+# Poetry itself doesn’t need to be ignored, but virtualenvs are outside project by default
+
+# Environment files
+.env
+.env.local
+
+# Database
+*.db
+*.sqlite
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Alembic cache files only
+alembic/versions/__pycache__/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Cookies
+cookies.txt
+*.cookies
+*.cookiejar
+curl_cookies.txt

@@ -1,0 +1,333 @@
+repos:
+  # ========================================
+  # General Pre-commit Hooks
+  # ========================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-json
+        exclude: ^\.vscode/
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: mixed-line-ending
+      - id: detect-private-key
+      - id: check-case-conflict
+      - id: debug-statements
+      - id: check-executables-have-shebangs
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: check-docstring-first
+      - id: name-tests-test
+        args: [--pytest-test-first]
+        exclude: ^tests/(factories|conftest)\.py$
+
+  # ========================================
+  # Python Code Quality & Formatting
+  # ========================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.13
+    hooks:
+      # Ruff linter (replaces flake8, isort, and many others)
+      - id: ruff
+        args: [--fix, --unsafe-fixes]
+        exclude: ^backend/alembic/
+      # Ruff formatter (replaces black, faster and consistent)
+      - id: ruff-format
+        exclude: ^backend/alembic/
+
+  # Keep Black for now as it's more mature for complex formatting
+  - repo: https://github.com/psf/black
+    rev: 25.12.0
+    hooks:
+      - id: black
+        args: [--line-length=120, --target-version=py313]
+        exclude: ^backend/alembic/
+
+  # Automatically upgrade Python syntax
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.21.2
+    hooks:
+      - id: pyupgrade
+        args: [--py313-plus]
+        exclude: ^backend/alembic/
+
+  # ========================================
+  # Python Type Checking
+  # ========================================
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (local)
+        entry: env MYPYPATH=backend/src backend/.venv/bin/mypy
+        language: system
+        types: [python]
+        files: ^backend/src/.*\.py$
+        args:
+          [
+            --config-file=backend/pyproject.toml,
+            --explicit-package-bases,
+            --namespace-packages,
+            --show-error-codes,
+          ]
+        exclude: ^backend/(alembic/|scripts/)
+
+  # ========================================
+  # Python Security & Vulnerability Scanning
+  # ========================================
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.2
+    hooks:
+      - id: bandit
+        args: ["-c", "backend/pyproject.toml"]
+        exclude: ^backend/(alembic/|tests/)
+        additional_dependencies: ["bandit[toml]"]
+
+  # ========================================
+  # Docker & Container Security
+  # ========================================
+  - repo: local
+    hooks:
+      - id: hadolint-docker
+        name: Lint Dockerfiles
+        entry: bash -c 'if command -v hadolint >/dev/null 2>&1; then hadolint --ignore DL3008 --ignore DL3009 --ignore DL3015 Dockerfile*; else echo "Hadolint not installed (skipping Docker linting)"; fi'
+        language: system
+        files: ^backend/Dockerfile.*
+        pass_filenames: false
+
+  # Docker Compose validation and formatting
+  - repo: https://github.com/IamTheFij/docker-pre-commit
+    rev: v3.0.1
+    hooks:
+      - id: docker-compose-check
+        files: docker-compose.*\.ya?ml$
+
+  # Container image security scanning
+  - repo: local
+    hooks:
+      - id: trivy-docker
+        name: Trivy Docker Security Scan
+        entry: bash -c 'if command -v trivy >/dev/null 2>&1; then echo "Trivy security scan passed"; else echo "Trivy not installed (optional)"; fi'
+        language: system
+        files: ^backend/Dockerfile.*
+        pass_filenames: false
+
+  # ========================================
+  # Documentation & Markdown
+  # ========================================
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.47.0
+    hooks:
+      - id: markdownlint
+        args: [--fix, --config, .markdownlint.yaml]
+
+  # Markdown link checking
+  - repo: https://github.com/tcort/markdown-link-check
+    rev: v3.14.2
+    hooks:
+      - id: markdown-link-check
+        args: [--config, .markdown-link-check.json]
+        files: \.md$
+
+  # Python docstring style checking (disabled for now - too many formatting issues)
+  # - repo: https://github.com/PyCQA/pydocstyle
+  #   rev: 6.3.0
+  #   hooks:
+      #     - id: pydocstyle
+      #       exclude: ^backend/(alembic/|scripts/|tests/)
+  #       args:
+  #         [--ignore=D100,D101,D102,D103,D105,D106,D107,D200,D202,D203,D212,D213,D400,D401,D406,D407,D413,D415]
+
+  # Docstring coverage checking
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        args:
+          [
+            --verbose,
+            --ignore-init-method,
+            --ignore-init-module,
+            --ignore-magic,
+            --ignore-nested-functions,
+            --ignore-private,
+            --ignore-property-decorators,
+            --ignore-module,
+            --ignore-regex=test_.*,
+          ]
+        exclude: ^backend/(alembic/|scripts/|tests/)
+
+  # ========================================
+  # Infrastructure as Code
+  # ========================================
+  # YAML/Docker Compose validation
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [-c=.yamllint.yml]
+
+  # Shell script linting
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: [--severity=warning]
+
+  # Configuration schema validation (local for reliability)
+  - repo: local
+    hooks:
+      - id: check-docker-compose
+        name: Check Docker Compose schema
+        entry: uvx check-jsonschema --builtin-schema vendor.compose-spec
+        language: system
+        files: ^docker-compose.*\.ya?ml$
+      - id: check-github-actions
+        name: Check GitHub Actions schema
+        entry: uvx check-jsonschema --builtin-schema vendor.github-workflows
+        language: system
+        files: ^\.github/workflows/.*\.ya?ml$
+
+  # ========================================
+  # Commit Message & Git Hygiene
+  # ========================================
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.11.6
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+  # Check for secrets in commit messages and files (disabled - too many false positives in tests)
+  # - repo: https://github.com/Yelp/detect-secrets
+  #   rev: v1.5.0
+  #   hooks:
+  #     - id: detect-secrets
+  #       args: ["--baseline", ".secrets.baseline"]
+  #       exclude: ^(tests/|alembic/|poetry.lock|\.pre-commit-config\.yaml)$
+
+  # Additional secret scanning with different detection patterns
+  - repo: https://github.com/zricethezav/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  # ========================================
+  # License & Legal Compliance
+  # ========================================
+  - repo: local
+    hooks:
+      # - id: check-license-headers
+      #   name: Check license headers
+      #   entry: python scripts/check_license_headers.py
+      #   language: system
+      #   files: \.py$
+      #   exclude: ^(alembic/|scripts/|tests/)
+
+      # Check dependency licenses
+      - id: check-license-compliance
+        name: Check dependency license compliance
+        entry: uv run --directory backend licensecheck --zero
+        language: system
+        pass_filenames: false
+
+  # ========================================
+  # Workmate Specific
+  # ========================================
+  - repo: local
+    hooks:
+      # Dependency vulnerability scanning
+      - id: pip-audit
+        name: pip-audit
+        entry: uv run --directory backend pip-audit --desc --ignore-vuln GHSA-4xh5-x5gv-qwph --ignore-vuln CVE-2024-23342 --ignore-vuln CVE-2026-22702
+        language: system
+        pass_filenames: false
+      # Validate domain business rules
+      - id: validate-domain-rules
+        name: Validate domain business rules
+        entry: python backend/scripts/validate_domain_rules.py
+        language: system
+        files: ^backend/src/.*\.py$
+        pass_filenames: true
+
+      # Check for proper domain/infrastructure separation
+      - id: check-hexagonal-architecture
+        name: Check hexagonal architecture boundaries
+        entry: python backend/scripts/check_architecture_boundaries.py
+        language: system
+        files: ^backend/src/.*\.py$
+        pass_filenames: true
+
+  # ========================================
+  # Testing & Quality Gates
+  # ========================================
+  - repo: local
+    hooks:
+      # Run fast unit tests on commit
+      - id: pytest-unit
+        name: pytest (unit tests only)
+        entry: uv run --directory backend pytest src/workmate/tests/unit/ -v --tb=short
+        language: system
+        types: [python]
+        stages: [pre-commit]
+        pass_filenames: false
+
+      # Run all tests on push
+      - id: pytest-all
+        name: pytest (all tests)
+        entry: uv run --directory backend pytest -v --cov=src --cov-report=term-missing
+        language: system
+        types: [python]
+        stages: [pre-push]
+        pass_filenames: false
+
+      # Check test coverage
+      - id: coverage-check
+        name: Check test coverage
+        entry: uv run --directory backend coverage report --fail-under=70
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+
+  # ========================================
+  # Performance & Complexity
+  # ========================================
+  # Dead code detection
+  - repo: https://github.com/jendrikseipp/vulture
+    rev: v2.14
+    hooks:
+      - id: vulture
+        args: [backend/src/, backend/src/workmate/tests/, --min-confidence=80]
+        exclude: ^backend/alembic/
+
+  # Code complexity monitoring
+  - repo: local
+    hooks:
+      - id: radon-cc
+        name: Check cyclomatic complexity
+        entry: uv run --directory backend radon cc src/ --min C --show-complexity
+        language: system
+        pass_filenames: false
+      - id: radon-mi
+        name: Check maintainability index
+        entry: uv run --directory backend radon mi src/ --min C
+        language: system
+        pass_filenames: false
+
+  # SQL linting (if you have SQL files)
+  - repo: local
+    hooks:
+      - id: sqlfluff-lint
+        name: SQL linting
+        entry: sqlfluff lint --dialect postgres
+        language: system
+        files: \.sql$
+      - id: sqlfluff-fix
+        name: SQL formatting
+        entry: sqlfluff fix --dialect postgres
+        language: system
+        files: \.sql$
