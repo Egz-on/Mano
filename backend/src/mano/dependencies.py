@@ -194,13 +194,17 @@ async def get_current_user(
 
     email = token_info["sub"].strip().lower()
     credential = await auth_repository.get_credential_by_email(email)
-    auth_user_id = credential.auth_user_id if credential else _derive_auth_user_id(email)
+    demo_user = DEMO_USERS.get(email)
+    auth_user_id = (
+        credential.auth_user_id
+        if credential
+        else UserAuthId(demo_user["auth_user_id"]) if demo_user else _derive_auth_user_id(email)
+    )
 
-    existing = await user_service.user_repository.get_user_by_auth_user_id(auth_user_id)
+    existing = await user_service.find_user_by_auth_user_id(auth_user_id)
     if existing:
         return existing
 
-    demo_user = DEMO_USERS.get(email)
     full_name = demo_user["full_name"] if demo_user else token_info.get("full_name", "User")
     role = UserRole(demo_user["role"] if demo_user else token_info.get("role", UserRole.client))
     raw_phone = demo_user["phone"] if demo_user else "+38970000000"
@@ -226,7 +230,6 @@ async def get_current_user(
         last_login=now,
     )
     created = await user_service.create_user_profile(new_user)
-    await db_session.commit()
     return created
 
 
