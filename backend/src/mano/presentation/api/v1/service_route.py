@@ -2,7 +2,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from mano.dependencies import get_current_user, get_service_use_cases
 from mano.domain.models.user import UserProfile
-from mano.domain.models.service_model import ProviderId, CategoryId, ServiceId
+from mano.domain.models.service_model import ProviderId, CategoryId, Service, ServiceId
 from mano.application.use_cases.service_use_cases import ServiceUseCases
 from mano.application.dtos.service_dtos import CreateServiceRequest, UpdateServiceRequest
 from mano.presentation.schemas.service_schemas import (
@@ -17,6 +17,28 @@ from mano.utils.pagination import Pagination, PaginationParams, PaginatedRespons
 router = APIRouter(prefix="/services", tags=["services"])
 
 
+def _ensure_can_create_service(*, current_user: UserProfile, provider_id: ProviderId, is_featured: bool) -> None:
+    if current_user.is_admin():
+        return
+    if not current_user.is_provider():
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only providers can create services")
+    if str(current_user.id) != str(provider_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot create services for another provider")
+    if is_featured:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can feature services")
+
+
+def _ensure_can_manage_service(*, current_user: UserProfile, service: Service, requested_featured: bool | None = None) -> None:
+    if current_user.is_admin():
+        return
+    if not current_user.is_provider():
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only providers can manage services")
+    if str(current_user.id) != str(service.provider_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot manage another provider's service")
+    if requested_featured:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can feature services")
+
+
 @router.post("/", response_model=ServiceResponseSchema, status_code=status.HTTP_201_CREATED)
 async def create_service(
     payload: CreateServiceSchema,
@@ -25,17 +47,26 @@ async def create_service(
 ) -> ServiceResponseSchema:
     """Create a new service."""
     try:
-        # TODO: verify if current_user is a provider or has permission to create services
-        # For now assuming any authenticated user can create a service or we rely on provider_id check
+        provider_id = ProviderId(str(payload.provider_id))
+        _ensure_can_create_service(
+            current_user=current_user,
+            provider_id=provider_id,
+            is_featured=payload.is_featured,
+        )
 
         request = CreateServiceRequest(
-            provider_id=ProviderId(str(payload.provider_id)),
+            provider_id=provider_id,
             category_id=CategoryId(str(payload.category_id)),
             title=payload.title,
             description=payload.description,
             price=payload.price,
             currency=payload.currency,
             pricing_type=payload.pricing_type,
+            service_areas=payload.service_areas,
+            service_metadata=payload.service_metadata,
+            images=payload.images,
+            is_active=payload.is_active,
+            is_featured=payload.is_featured,
         )
 
         service = await use_case.create_service(request)
@@ -73,7 +104,12 @@ async def update_service(
 ) -> ServiceResponseSchema:
     """Update an existing service."""
     try:
-        # TODO: Check if current_user owns the service
+        existing_service = await use_case.get_service_by_id(ServiceId(service_id))
+        _ensure_can_manage_service(
+            current_user=current_user,
+            service=existing_service,
+            requested_featured=payload.is_featured,
+        )
 
         request = UpdateServiceRequest(
             title=payload.title,
@@ -107,7 +143,8 @@ async def delete_service(
 ) -> None:
     """Delete a service."""
     try:
-        # TODO: Check ownership
+        existing_service = await use_case.get_service_by_id(ServiceId(service_id))
+        _ensure_can_manage_service(current_user=current_user, service=existing_service)
         await use_case.delete_service(ServiceId(service_id))
     except ServiceNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found")
