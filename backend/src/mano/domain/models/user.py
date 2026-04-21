@@ -136,6 +136,14 @@ class UserProfile:
 
         return replace(self, **updates)
 
+    def change_role(self, role: UserRole) -> "UserProfile":
+        """Return a new profile with an updated role."""
+        return replace(self, role=role, updated_at=datetime.now(UTC))
+
+    def replace_profile_metadata(self, profile_metadata: dict[str, Any]) -> "UserProfile":
+        """Return a new profile with replaced metadata."""
+        return replace(self, profile_metadata=profile_metadata, updated_at=datetime.now(UTC))
+
     def update_stats(self, total_services: int, average_rating: float, total_reviews: int) -> "UserProfile":
         return replace(self, total_services=total_services, average_rating=average_rating, total_reviews=total_reviews)
 
