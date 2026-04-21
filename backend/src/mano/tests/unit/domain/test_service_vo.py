@@ -1,4 +1,5 @@
 import pytest
+from mano.domain.exceptions.base import DomainError
 from mano.domain.models.service_model import Service, ServiceId, ProviderId, CategoryId
 import uuid
 
@@ -32,7 +33,7 @@ def test_service_update_description_too_short():
         description="Original description",
         price=10.0,
     )
-    with pytest.raises(ValueError, match="Description must be at least 10 characters long"):
+    with pytest.raises(DomainError, match="Service description must be at least 10 characters long"):
         service.update_description("short")
 
 
