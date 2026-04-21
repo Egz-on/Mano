@@ -1,5 +1,7 @@
 """Rating domain service."""
 
+from mano.domain.exceptions.base import ServiceNotFoundError
+from mano.domain.models.review import ReviewStatus
 from mano.domain.models.service_model import ServiceId, Service
 from mano.domain.repositories.review_repository import ReviewRepository
 from mano.domain.repositories.service_repository import ServiceRepository
@@ -18,26 +20,16 @@ class RatingService:
         self.service_repository = service_repository
 
     async def recalculate_average_rating(self, service_id: ServiceId) -> Service:
-        """
-        Recalculate average rating for a service based on approved reviews.
-        """
+        """Recalculate average rating for a service based on approved reviews."""
         service = await self.service_repository.get_service_by_id(service_id)
         if not service:
-            # Should not happen in normal flow if called correctly
-            raise ValueError(f"Service {service_id} not found")
+            raise ServiceNotFoundError(f"Service {service_id} not found")
 
-        reviews = await self.review_repository.list_by_service(service_id)
-
-        # Filter only approved reviews if moderation is active?
-        # For now, let's assume all reviews count or we filter by status.
-        # User request didn't specify status filtering, but generally only active/approved should count.
-        # However, checking Review model, status is 'pending' by default.
-        # Let's count all non-rejected reviews or just all for now to be simple but correct to "average".
-        # Better approach: Count everything for now, or maybe only "approved".
-        # Given "pending", probably we should assume all valid or simple average for MVP.
-        # Let's simple average of all reviews in the list.
-
-        # Actually, let's play it safe and count all.
+        reviews = [
+            review
+            for review in await self.review_repository.list_by_service(service_id)
+            if review.status == ReviewStatus.approved.value
+        ]
 
         count = len(reviews)
         if count == 0:
