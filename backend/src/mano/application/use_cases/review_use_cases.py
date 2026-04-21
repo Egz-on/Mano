@@ -5,8 +5,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import NAMESPACE_DNS, uuid5
 
-from mano.application.dtos.review_dtos import CreatePublicReviewCommand, UpdateReviewRequest
-from mano.domain.exceptions.review_exceptions import ReviewNotFound
+from mano.application.dtos.review_dtos import CreatePublicReviewCommand, CreateReviewRequest, UpdateReviewRequest
+from mano.domain.exceptions.base import UserNotFoundError
+from mano.domain.exceptions.review_exceptions import ReviewNotFound, ReviewValidationError
 from mano.domain.models.review import ClientId, ProviderId, Review, ReviewId
 from mano.domain.models.service_model import ServiceId
 from mano.domain.models.user import PhoneNumber, UserAuthId, UserId, UserProfile, UserRole
@@ -36,11 +37,10 @@ class ReviewUseCases:
 
         if not client_id:
             if not guest_name or not guest_email:
-                raise ValueError("Guest reviews require guest_name and guest_email")
+                raise ReviewValidationError("Guest reviews require guest_name and guest_email")
             client_id = await self._get_or_create_guest_user_id(guest_name=guest_name, guest_email=guest_email)
 
-        review = Review(
-            id=ReviewId(),
+        review = Review.create_public(
             client_id=ClientId(client_id),
             provider_id=ProviderId(command.provider_id),
             service_id=ServiceId(command.service_id),
@@ -48,10 +48,22 @@ class ReviewUseCases:
             comment=command.comment,
             guest_name=guest_name,
             guest_email=guest_email,
-            status="approved",
         )
         created = await self.review_service.create_review(review)
         await self.rating_service.recalculate_average_rating(ServiceId(command.service_id))
+        return created
+
+    async def create_review(self, request: CreateReviewRequest) -> Review:
+        """Create a review from an internal application request."""
+        review = Review.create(
+            client_id=request.client_id,
+            provider_id=request.provider_id,
+            service_id=request.service_id,
+            rating=request.rating,
+            comment=request.comment,
+        )
+        created = await self.review_service.create_review(review)
+        await self.rating_service.recalculate_average_rating(request.service_id)
         return created
 
     async def get_review(self, review_id: ReviewId) -> Review | None:
@@ -68,22 +80,7 @@ class ReviewUseCases:
         if existing is None:
             raise ReviewNotFound(f"Review with ID {request.review_id} not found")
 
-        updated = Review(
-            id=existing.id,
-            client_id=existing.client_id,
-            provider_id=existing.provider_id,
-            service_id=existing.service_id,
-            rating=request.rating if request.rating is not None else existing.rating,
-            comment=request.comment if request.comment is not None else existing.comment,
-            status=existing.status,
-            created_at=existing.created_at,
-            updated_at=datetime.now(UTC),
-            moderated_by=existing.moderated_by,
-            moderated_at=existing.moderated_at,
-            guest_name=existing.guest_name,
-            guest_email=existing.guest_email,
-            moderation_notes=existing.moderation_notes,
-        )
+        updated = existing.update_content(rating=request.rating, comment=request.comment)
         result = await self.review_service.update_review(updated)
         await self.rating_service.recalculate_average_rating(existing.service_id)
         return result
@@ -98,13 +95,15 @@ class ReviewUseCases:
         await self.rating_service.recalculate_average_rating(existing.service_id)
 
     async def _get_or_create_guest_user_id(self, *, guest_name: str, guest_email: str) -> str:
-        users = await self.user_service.list_users()
-        for user in users:
-            email = (user.profile_metadata or {}).get("email")
-            if isinstance(email, str) and email.strip().lower() == guest_email:
-                return str(user.id)
-
         auth_user_id = UserAuthId(str(uuid5(NAMESPACE_DNS, f"mano:guest:{guest_email}")))
+        try:
+            existing_user = await self.user_service.get_user_by_auth_user_id(auth_user_id)
+        except UserNotFoundError:
+            existing_user = None
+
+        if existing_user is not None:
+            return str(existing_user.id)
+
         now = datetime.now(UTC)
         guest_user = UserProfile(
             id=UserId(),
