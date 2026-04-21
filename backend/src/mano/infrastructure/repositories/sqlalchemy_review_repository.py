@@ -5,6 +5,7 @@ from __future__ import annotations
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from mano.common.uuid_utils import uuid_to_str
+from mano.domain.exceptions.review_exceptions import ReviewNotFound
 from mano.domain.models.review import ClientId, ProviderId, Review, ReviewId
 from mano.domain.models.service_model import ServiceId
 from mano.domain.models.user import UserId
@@ -86,25 +87,28 @@ class SQLAlchemyReviewRepository(ReviewRepository):
 
     async def update(self, review: Review) -> Review:
         """Update a review."""
-        model = ReviewModel(
-            id=uuid_to_str(review.id),
-            client_id=uuid_to_str(review.client_id),
-            provider_id=uuid_to_str(review.provider_id),
-            service_id=uuid_to_str(review.service_id),
-            rating=review.rating,
-            comment=review.comment,
-            guest_name=review.guest_name,
-            guest_email=review.guest_email,
-            status=review.status,
-            created_at=review.created_at,
-            updated_at=review.updated_at,
-            moderated_by=uuid_to_str(review.moderated_by) if review.moderated_by else None,
-            moderated_at=review.moderated_at,
-            moderation_notes=review.moderation_notes,
-        )
-        merged_model = await self._session.merge(model)
+        stmt = select(ReviewModel).where(ReviewModel.id == uuid_to_str(review.id))
+        result = await self._session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if model is None:
+            raise ReviewNotFound(f"Review with ID {review.id} not found")
+
+        model.client_id = uuid_to_str(review.client_id)
+        model.provider_id = uuid_to_str(review.provider_id)
+        model.service_id = uuid_to_str(review.service_id)
+        model.rating = review.rating
+        model.comment = review.comment
+        model.guest_name = review.guest_name
+        model.guest_email = review.guest_email
+        model.status = review.status
+        model.created_at = review.created_at
+        model.updated_at = review.updated_at
+        model.moderated_by = uuid_to_str(review.moderated_by) if review.moderated_by else None
+        model.moderated_at = review.moderated_at
+        model.moderation_notes = review.moderation_notes
         await self._session.flush()
-        return self._to_domain(merged_model)
+        await self._session.refresh(model)
+        return self._to_domain(model)
 
     async def delete(self, review_id: ReviewId) -> None:
         """Delete a review."""
