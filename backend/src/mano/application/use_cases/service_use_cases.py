@@ -27,7 +27,7 @@ class ServiceUseCases:
         1. Call domain service (business logic validation happens there)
         2. Return domain entity (let caller convert to DTO if needed)
         """
-        return await self._service_service.create_service(
+        service = Service.create(
             provider_id=request.provider_id,
             category_id=request.category_id,
             title=request.title,
@@ -35,7 +35,13 @@ class ServiceUseCases:
             price=request.price,
             currency=request.currency,
             pricing_type=request.pricing_type,
+            service_areas=request.service_areas,
+            service_metadata=request.service_metadata,
+            images=request.images,
+            is_active=request.is_active,
+            is_featured=request.is_featured,
         )
+        return await self._service_service.create_service(service)
 
     async def get_service_by_id(self, service_id: ServiceId) -> Service:
         """Get service by ID."""
