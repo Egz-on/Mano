@@ -12,6 +12,7 @@ from mano.presentation.schemas.review_schema import ReviewCreateSchema, ReviewRe
 from mano.domain.models.service_model import ServiceId
 from mano.application.dtos.review_dtos import CreatePublicReviewCommand, UpdateReviewRequest
 from mano.application.use_cases.review_use_cases import ReviewUseCases
+from mano.domain.exceptions.review_exceptions import ReviewNotFound, ReviewValidationError
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
@@ -53,9 +54,11 @@ async def create_review(
         guest_name=payload.guest_name,
         guest_email=str(payload.guest_email) if payload.guest_email else None,
     )
-    review = await use_case.create_public_review(command)
-    await db_session.commit()
-    return _to_response(review)
+    try:
+        review = await use_case.create_public_review(command)
+        return _to_response(review)
+    except ReviewValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/{review_id}", response_model=ReviewResponseSchema)
@@ -95,17 +98,11 @@ async def update_review(
     )
     try:
         review = await use_case.update_review(request)
-        await db_session.commit()
         return _to_response(review)
-    except ValueError as e:
-        # Check if it's not found or validation error.
-        # Use case updates raises ValueError if not found (based on my impl).
-        # Need to distinguish? My impl: "Review with ID ... not found"
-        # Ideally UseCase should raise DomainError or NotFoundError.
-        # But assuming ValueError is what propagates.
-        if "not found" in str(e):
-            raise HTTPException(status_code=404, detail=str(e))
-        raise HTTPException(status_code=400, detail=str(e))
+    except ReviewNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ReviewValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.delete("/{review_id}", status_code=204)
@@ -115,5 +112,7 @@ async def delete_review(
     db_session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Delete a review."""
-    await use_case.delete_review(ReviewId(str(review_id)))
-    await db_session.commit()
+    try:
+        await use_case.delete_review(ReviewId(str(review_id)))
+    except ReviewNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
