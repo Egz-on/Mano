@@ -23,11 +23,6 @@ class CreateServiceSchema(BaseModel):
     images: list[str] = Field(default_factory=list, description="List of image URLs for the service")
     is_active: bool = Field(default=True, description="Whether the service is active")
     is_featured: bool = Field(default=False, description="Whether the service is featured")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp when the service was created")
-    updated_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Timestamp when the service was last updated"
-    )
-
     model_config = {
         "json_schema_extra": {
             "example": {
