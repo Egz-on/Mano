@@ -16,7 +16,8 @@ async def test_user(db_session: "AsyncSession"):
     user = await create_test_user(
         db_session=db_session,
         auth_user_id=auth_user_id,
-        full_name="Test User",
+        name="Test",
+        surname="User",
         phone="+38970123456",
         role="client",
     )
@@ -29,18 +30,20 @@ async def test_get_my_profile(async_client: AsyncClient, test_user: dict[str, An
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == test_user["id"]
-    assert data["full_name"] == "Test User"
+    assert data["name"] == "Test"
+    assert data["surname"] == "User"
 
 
 @pytest.mark.asyncio
 async def test_update_my_profile(
     async_client: AsyncClient, test_user: dict[str, Any], auth_header_client: dict[str, str]
 ):
-    payload = {"full_name": "Updated Name", "city": "Skopje"}
+    payload = {"name": "Updated", "surname": "Name", "city": "Skopje"}
     response = await async_client.put("/api/v1/users/me", json=payload, headers=auth_header_client)
     assert response.status_code == 200
     data = response.json()
-    assert data["full_name"] == "Updated Name"
+    assert data["name"] == "Updated"
+    assert data["surname"] == "Name"
     assert data["city"] == "Skopje"
 
 

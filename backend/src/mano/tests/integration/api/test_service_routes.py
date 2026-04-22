@@ -14,7 +14,8 @@ async def test_provider(db_session: "AsyncSession"):
     provider = await create_test_provider(
         db_session=db_session,
         auth_user_id="00000000-0000-0000-0000-000000000001",
-        full_name="Test Provider",
+        name="Test",
+        surname="Provider",
         phone="+38970123456",
     )
     return provider

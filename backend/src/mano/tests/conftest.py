@@ -109,27 +109,28 @@ async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient]:
     app.dependency_overrides.clear()
 
 
-def _build_auth_header(*, email: str, role: str, full_name: str) -> dict[str, str]:
+def _build_auth_header(*, email: str, role: str, name: str, surname: str) -> dict[str, str]:
     secret_key = get_settings().secret_key or "dev-secret-change-me"
     token = create_access_token(
         secret_key=secret_key,
         subject=email,
         role=role,
-        full_name=full_name,
+        name=name,
+        surname=surname,
     )
     return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture
 def auth_header_admin() -> dict[str, str]:
-    return _build_auth_header(email="admin@mano.com", role="admin", full_name="System Admin")
+    return _build_auth_header(email="admin@mano.com", role="admin", name="System", surname="Admin")
 
 
 @pytest.fixture
 def auth_header_provider() -> dict[str, str]:
-    return _build_auth_header(email="provider@mano.com", role="provider", full_name="Default Provider")
+    return _build_auth_header(email="provider@mano.com", role="provider", name="Default", surname="Provider")
 
 
 @pytest.fixture
 def auth_header_client() -> dict[str, str]:
-    return _build_auth_header(email="client@mano.com", role="client", full_name="Guest Client")
+    return _build_auth_header(email="client@mano.com", role="client", name="Guest", surname="Client")

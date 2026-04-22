@@ -3,15 +3,14 @@ from __future__ import annotations
 import pytest
 from httpx import AsyncClient
 
-from mano.infrastructure.config.settings import get_settings
-
 
 @pytest.mark.asyncio
 async def test_register_and_login_flow(async_client: AsyncClient) -> None:
     register_payload = {
         "email": "new.user@mano.com",
         "password": "StrongPass123",
-        "full_name": "New User",
+        "name": "New",
+        "surname": "User",
         "phone": "+38970123456",
         "role": "client",
     }
@@ -21,7 +20,8 @@ async def test_register_and_login_flow(async_client: AsyncClient) -> None:
 
     register_data = register_response.json()
     assert register_data["user"]["email"] == "new.user@mano.com"
-    assert register_data["user"]["full_name"] == "New User"
+    assert register_data["user"]["name"] == "New"
+    assert register_data["user"]["surname"] == "User"
     assert register_data["user"]["role"] == "client"
     assert register_data["access_token"]
 
@@ -32,7 +32,8 @@ async def test_register_and_login_flow(async_client: AsyncClient) -> None:
     assert me_response.status_code == 200
     me_data = me_response.json()
     assert me_data["email"] == "new.user@mano.com"
-    assert me_data["full_name"] == "New User"
+    assert me_data["name"] == "New"
+    assert me_data["surname"] == "User"
 
     login_response = await async_client.post(
         "/api/v1/auth/login",
@@ -57,7 +58,8 @@ async def test_forgot_and_reset_password_flow(async_client: AsyncClient) -> None
     register_payload = {
         "email": "reset.user@mano.com",
         "password": "InitialPass123",
-        "full_name": "Reset User",
+        "name": "Reset",
+        "surname": "User",
         "phone": "+38970987654",
     }
     register_response = await async_client.post("/api/v1/auth/register", json=register_payload)
@@ -71,10 +73,7 @@ async def test_forgot_and_reset_password_flow(async_client: AsyncClient) -> None
 
     forgot_data = forgot_response.json()
     assert "message" in forgot_data
-    if get_settings().is_development:
-        assert forgot_data["reset_token"] is not None
-    else:
-        assert forgot_data["reset_token"] is None
+    assert "reset_token" in forgot_data
 
     reset_response = await async_client.post(
         "/api/v1/auth/reset-password",

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 async def test_reviewer(db_session: "AsyncSession"):
-    return await create_test_user(db_session, auth_user_id=str(uuid4()), full_name="Reviewer Bob")
+    return await create_test_user(db_session, auth_user_id=str(uuid4()), name="Reviewer", surname="Bob")
 
 
 @pytest.fixture

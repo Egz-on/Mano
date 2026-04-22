@@ -20,7 +20,6 @@ from mano.infrastructure.database.models import (
     AvailabilityModel,
 )
 
-
 # Default test constants
 DEFAULT_AUTH_USER_ID = "00000000-0000-0000-0000-000000000001"
 DEFAULT_PHONE = "+38970123456"
@@ -31,7 +30,8 @@ DEFAULT_PRICING_TYPE = "fixed"
 async def create_test_user(
     db_session: AsyncSession,
     auth_user_id: str | None = None,
-    full_name: str = "Test User",
+    name: str = "Test",
+    surname: str = "User",
     phone: str = DEFAULT_PHONE,
     role: str = "client",
     **kwargs: Any,
@@ -42,7 +42,8 @@ async def create_test_user(
     Args:
         db_session: Database session
         auth_user_id: Auth user ID (defaults to test constant)
-        full_name: User's full name
+        name: User's first name
+        surname: User's surname
         phone: User's phone number
         role: User role (client/provider)
         **kwargs: Additional user fields
@@ -54,7 +55,8 @@ async def create_test_user(
     user = UserProfileModel(
         id=user_id,
         auth_user_id=auth_user_id or DEFAULT_AUTH_USER_ID,
-        full_name=full_name,
+        name=name,
+        surname=surname,
         phone=phone,
         role=role,
         created_at=datetime.now(UTC),
@@ -68,7 +70,8 @@ async def create_test_user(
     return {
         "id": user.id,
         "auth_user_id": user.auth_user_id,
-        "full_name": user.full_name,
+        "name": user.name,
+        "surname": user.surname,
         "phone": user.phone,
         "role": user.role,
         "city": user.city,
@@ -80,7 +83,8 @@ async def create_test_user(
 async def create_test_provider(
     db_session: AsyncSession,
     auth_user_id: str | None = None,
-    full_name: str = "Test Provider",
+    name: str = "Test",
+    surname: str = "Provider",
     phone: str = DEFAULT_PHONE,
     **kwargs: Any,
 ) -> dict[str, Any]:
@@ -90,7 +94,8 @@ async def create_test_provider(
     Args:
         db_session: Database session
         auth_user_id: Auth user ID (defaults to test constant)
-        full_name: Provider's full name
+        name: Provider's first name
+        surname: Provider's surname
         phone: Provider's phone number
         **kwargs: Additional provider fields
 
@@ -100,7 +105,8 @@ async def create_test_provider(
     return await create_test_user(
         db_session=db_session,
         auth_user_id=auth_user_id,
-        full_name=full_name,
+        name=name,
+        surname=surname,
         phone=phone,
         role="provider",
         **kwargs,

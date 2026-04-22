@@ -32,7 +32,12 @@ def test_phone_number_invalid_length():
 
 def test_user_profile_role_checks():
     profile = UserProfile(
-        id=UserId(), auth_user_id=UserAuthId(), full_name="Test User", phone="+38970111222", role=UserRole.provider
+        id=UserId(),
+        auth_user_id=UserAuthId(),
+        name="Test",
+        surname="User",
+        phone="+38970111222",
+        role=UserRole.provider,
     )
     assert profile.is_provider() is True
     assert profile.is_client() is False
@@ -43,7 +48,8 @@ def test_user_profile_get_display_name():
     profile = UserProfile(
         id=UserId(),
         auth_user_id=UserAuthId(),
-        full_name="John Doe",
+        name="John",
+        surname="Doe",
         phone="+38970111222",
         role=UserRole.provider,
         company_name="Doe Repair",
@@ -61,5 +67,5 @@ def replace_role(profile: UserProfile, role: UserRole) -> UserProfile:
 
 
 def test_user_profile_complete_check():
-    profile = UserProfile(id=UserId(), auth_user_id=UserAuthId(), full_name="John Doe", phone="+38970111222")
+    profile = UserProfile(id=UserId(), auth_user_id=UserAuthId(), name="John", surname="Doe", phone="+38970111222")
     assert profile.has_complete_profile() is True
