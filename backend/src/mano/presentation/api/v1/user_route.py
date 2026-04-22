@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from mano.dependencies import get_current_user, get_user_use_cases
 from mano.domain.models.user import UserProfile
-from mano.presentation.schemas.user_schemas import UserProfileResponse, UserProfileUpdateRequest
+from mano.presentation.schemas.user_schemas import (
+    UserLocationUpdateRequest,
+    UserProfileResponse,
+    UserProfileUpdateRequest,
+)
 from mano.application.use_cases.user_use_cases import UserUseCases
 from mano.application.dtos.user_dtos import UpdateUserRequest
 from mano.domain.exceptions.base import UserNotFoundError, DomainError
@@ -93,6 +97,20 @@ async def update_my_profile(
 ) -> UserProfileResponse:
     """Users update their own profile."""
     dto = UpdateUserRequest(**payload.model_dump(exclude_unset=True))
+    updated = await use_cases.update_user_profile(current_user.id.value, dto, current_user)
+    return _to_profile_response(updated)
+
+
+@strict_auth_limiter
+@router.patch("/me/location", response_model=UserProfileResponse)
+async def update_my_location(
+    request: Request,
+    payload: UserLocationUpdateRequest,
+    current_user: UserProfile = Depends(get_current_user),
+    use_cases: UserUseCases = Depends(get_user_use_cases),
+) -> UserProfileResponse:
+    """Users update their current coordinates."""
+    dto = UpdateUserRequest(latitude=payload.latitude, longitude=payload.longitude)
     updated = await use_cases.update_user_profile(current_user.id.value, dto, current_user)
     return _to_profile_response(updated)
 

@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from mano.dependencies import get_current_user, get_service_use_cases
 from mano.domain.models.user import UserProfile
 from mano.domain.models.service_model import ProviderId, CategoryId, Service, ServiceId
@@ -156,15 +156,28 @@ async def delete_service(
 @router.get("/", response_model=PaginatedResponse[ServiceResponseSchema])
 async def list_services(
     params: PaginationParams = Depends(PaginationParams.from_query),
+    latitude: float | None = Query(default=None, ge=-90, le=90),
+    longitude: float | None = Query(default=None, ge=-180, le=180),
+    radius_km: float | None = Query(default=None, gt=0, le=500),
     use_case: ServiceUseCases = Depends(get_service_use_cases),
 ) -> PaginatedResponse[ServiceResponseSchema]:
     """List services with pagination."""
     try:
-        # Note: use_case.list_services() currently returns all services.
-        # Ideally, we should pass pagination params down to the repository.
-        # implementing in-memory pagination for now as per current use_case signature
+        coordinates_supplied = any(value is not None for value in (latitude, longitude, radius_km))
+        if coordinates_supplied and None in (latitude, longitude, radius_km):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="latitude, longitude, and radius_km must be provided together",
+            )
 
-        services_dtos = await use_case.list_services()
+        if coordinates_supplied:
+            services_dtos = await use_case.list_services_nearby(
+                latitude=latitude,
+                longitude=longitude,
+                radius_km=radius_km,
+            )
+        else:
+            services_dtos = await use_case.list_services()
 
         # Convert DTOs to Schemas is handled by model_validate but here we have DTOs
         # ServiceResponseDTO has model_config from_attributes, so it acts like a Pydantic model compatible object
@@ -195,5 +208,7 @@ async def list_services(
 
         return Pagination.paginate_items(services_schemas, params)
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

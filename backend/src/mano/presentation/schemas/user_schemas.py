@@ -120,6 +120,22 @@ class UserProfileUpdateRequest(BaseModel):
     }
 
 
+class UserLocationUpdateRequest(BaseModel):
+    """Update the authenticated user's coordinates."""
+
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "latitude": 41.9981,
+                "longitude": 21.4254,
+            }
+        }
+    }
+
+
 class PasswordChangeRequest(BaseModel):
     """Change password request."""
 
