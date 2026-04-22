@@ -493,9 +493,7 @@ class ArchitectureBoundaryChecker:
 
 def _create_argument_parser() -> argparse.ArgumentParser:
     """Create and configure the argument parser."""
-    parser = argparse.ArgumentParser(
-        description="Check hexagonal architecture boundaries and code quality for Mano"
-    )
+    parser = argparse.ArgumentParser(description="Check hexagonal architecture boundaries and code quality for Mano")
     parser.add_argument("files", nargs="*", help="Files to check")
     parser.add_argument(
         "--no-modern-checks",
@@ -575,9 +573,7 @@ def _print_results(violations: list, warnings: list, manos: list, args: argparse
     return exit_code
 
 
-def _print_summary(
-    violations: list, warnings: list, manos: list, files_checked: int, args: argparse.Namespace
-) -> None:
+def _print_summary(violations: list, warnings: list, manos: list, files_checked: int, args: argparse.Namespace) -> None:
     """Print summary information."""
     if not violations and not warnings and not manos:
         print(f"✅ All checks passed for {files_checked} files")
