@@ -100,3 +100,57 @@ async def test_list_services(
     assert response.status_code == 200
     data = response.json()
     assert len(data["items"]) >= 1
+
+
+@pytest.mark.asyncio
+async def test_list_services_with_location_filter(
+    async_client: AsyncClient,
+    test_category: dict[str, Any],
+    db_session: "AsyncSession",
+):
+    nearby_provider = await create_test_provider(
+        db_session=db_session,
+        auth_user_id="00000000-0000-0000-0000-000000000011",
+        name="Near",
+        surname="Provider",
+        phone="+38970123457",
+        company_name="Near Services",
+        location="POINT (21.4254 41.9981)",
+    )
+    far_provider = await create_test_provider(
+        db_session=db_session,
+        auth_user_id="00000000-0000-0000-0000-000000000012",
+        name="Far",
+        surname="Provider",
+        phone="+38970123458",
+        company_name="Far Services",
+        location="POINT (20.4489 44.7866)",
+    )
+
+    await create_test_service(
+        db_session=db_session,
+        provider_id=nearby_provider["id"],
+        category_id=test_category["id"],
+        title="Nearby Plumbing",
+        description="Nearby service description",
+        price=100.0,
+        pricing_type="fixed",
+    )
+    await create_test_service(
+        db_session=db_session,
+        provider_id=far_provider["id"],
+        category_id=test_category["id"],
+        title="Far Plumbing",
+        description="Far away service description",
+        price=120.0,
+        pricing_type="fixed",
+    )
+
+    response = await async_client.get(
+        "/api/v1/services/?latitude=41.9981&longitude=21.4254&radius_km=10"
+    )
+    assert response.status_code == 200
+    data = response.json()
+    titles = [item["title"] for item in data["items"]]
+    assert "Nearby Plumbing" in titles
+    assert "Far Plumbing" not in titles

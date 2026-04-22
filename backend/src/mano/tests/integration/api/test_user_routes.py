@@ -58,6 +58,24 @@ async def test_update_my_profile(
 
 
 @pytest.mark.asyncio
+async def test_patch_my_location(
+    async_client: AsyncClient,
+    test_user: dict[str, Any],
+    auth_header_client: dict[str, str],
+):
+    response = await async_client.patch(
+        "/api/v1/users/me/location",
+        json={"latitude": 41.9981, "longitude": 21.4254},
+        headers=auth_header_client,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == test_user["id"]
+    assert data["latitude"] == 41.9981
+    assert data["longitude"] == 21.4254
+
+
+@pytest.mark.asyncio
 async def test_access_without_token(async_client: AsyncClient):
     response = await async_client.get("/api/v1/users/me")
     assert response.status_code == 401

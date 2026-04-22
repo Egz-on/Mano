@@ -1,11 +1,13 @@
 import asyncio
 from collections.abc import AsyncGenerator, Generator
+from pathlib import Path
+from uuid import uuid4
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
 
 from mano.dependencies import get_email_sender
 from mano.domain.repositories.email_sender_port import EmailSenderPort
@@ -15,17 +17,6 @@ from mano.main import app
 from mano.infrastructure.cache.connection import get_redis_client
 from mano.infrastructure.config.settings import get_settings
 from mano.infrastructure.security.local_auth import create_access_token
-
-# Use in-memory SQLite for tests
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
-
-engine = create_async_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-
 
 class FakeRedis:
     async def get(self, key: str) -> str | None:
@@ -73,16 +64,30 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop]:
 
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession]:
-    # Create tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    test_database_path = Path("/tmp") / f"mano-test-{uuid4().hex}.sqlite"
+    test_database_url = f"sqlite+aiosqlite:///{test_database_path}"
+    sync_test_database_url = f"sqlite:///{test_database_path}"
+    engine = create_async_engine(
+        test_database_url,
+        connect_args={"check_same_thread": False},
+    )
+    sync_engine: Engine = create_engine(
+        sync_test_database_url,
+        connect_args={"check_same_thread": False},
+    )
+    testing_session_local = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
-    async with TestingSessionLocal() as session:
-        yield session
+    try:
+        Base.metadata.create_all(sync_engine)
 
-    # Drop tables after test
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        async with testing_session_local() as session:
+            yield session
+            await session.close()
+    finally:
+        await engine.dispose()
+        sync_engine.dispose()
+        if test_database_path.exists():
+            test_database_path.unlink()
 
 
 @pytest_asyncio.fixture(scope="function")
