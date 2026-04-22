@@ -4,7 +4,9 @@ Date: 2026-04-03
 
 ## Purpose
 
-This document records the backend recovery work completed on 2026-04-03 to restore application startup, fully remove the old external-auth remnants, and make the API documentation available again at `http://localhost:8000/docs`.
+This document records the backend recovery work completed on 2026-04-03 to restore
+application startup, fully remove the old external-auth remnants, and make the API
+documentation available again at `http://localhost:8000/docs`.
 
 ## Main Problem
 
@@ -12,8 +14,10 @@ The backend was in a partially migrated state:
 
 - Parts of the code still referenced an old external authentication implementation.
 - Other parts had already moved toward local JWT authentication.
-- Several core files no longer matched each other across domain models, repositories, dependency wiring, and database models.
-- The FastAPI application could not import successfully, so the server never started and `/docs` could not load.
+- Several core files no longer matched each other across domain models, repositories,
+  dependency wiring, and database models.
+- The FastAPI application could not import successfully, so the server never started and `/docs`
+  could not load.
 
 ## Changes Made
 
@@ -51,7 +55,8 @@ Files:
 
 What changed:
 
-- Replaced the old auth repository contract with the local credential and password reset contract actually used by the auth service.
+- Replaced the old auth repository contract with the local credential and password reset contract
+  actually used by the auth service.
 - Added missing domain exceptions:
   - `EmailAlreadyRegisteredError`
   - `InvalidPasswordResetTokenError`
@@ -59,7 +64,8 @@ What changed:
 
 Why:
 
-- Auth routes and services were importing exceptions and repository methods that no longer existed in the current code.
+- Auth routes and services were importing exceptions and repository methods that no longer existed in
+  the current code.
 - Without these definitions, the application failed during import before FastAPI could start.
 
 ### 3. Rebuilt dependency injection for local auth
@@ -81,7 +87,8 @@ What changed:
   - availability service
   - review service
   - rating service
-- Reworked `get_current_user` to decode the local JWT token and provision demo/local users when needed.
+- Reworked `get_current_user` to decode the local JWT token and provision demo/local users when
+  needed.
 
 Why:
 
@@ -164,7 +171,8 @@ This means:
 
 ## Why This Recovery Was Done This Way
 
-The goal was not to patch only the first error. The goal was to restore a professional, internally consistent backend path.
+The goal was not to patch only the first error. The goal was to restore a professional, internally
+consistent backend path.
 
 The recovery therefore focused on:
 
