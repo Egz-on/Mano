@@ -45,7 +45,7 @@ class ReviewUseCases:
             provider_id=ProviderId(command.provider_id),
             service_id=ServiceId(command.service_id),
             rating=command.rating,
-            comment=command.comment,
+            comment=command.comment or "",
             guest_name=guest_name,
             guest_email=guest_email,
         )
@@ -105,10 +105,12 @@ class ReviewUseCases:
             return str(existing_user.id)
 
         now = datetime.now(UTC)
+        first_name, separator, remainder = guest_name.strip().partition(" ")
         guest_user = UserProfile(
             id=UserId(),
             auth_user_id=auth_user_id,
-            full_name=guest_name,
+            name=first_name or "Guest",
+            surname=remainder if separator else "",
             phone=str(PhoneNumber("+38970000001")),
             role=UserRole.client,
             profile_metadata={"email": guest_email, "is_guest": True},

@@ -148,7 +148,7 @@ class Service:
         images: list[str] | None = None,
         is_active: bool = True,
         is_featured: bool = False,
-    ) -> "Service":
+    ) -> Service:
         """Create a normalized service entity."""
         now = datetime.now(UTC)
         return cls(
@@ -169,15 +169,15 @@ class Service:
             updated_at=now,
         )
 
-    def active(self) -> "Service":
+    def active(self) -> Service:
         """Activate the service."""
         return replace(self, is_active=True, updated_at=datetime.now(UTC))
 
-    def deactive(self) -> "Service":
+    def deactive(self) -> Service:
         """Deactivate the service."""
         return replace(self, is_active=False, updated_at=datetime.now(UTC))
 
-    def update_description(self, new_description: str) -> "Service":
+    def update_description(self, new_description: str) -> Service:
         """Update the service description."""
         return replace(self, description=new_description, updated_at=datetime.now(UTC))
 
@@ -193,7 +193,7 @@ class Service:
         images: list[str] | None = None,
         is_active: bool | None = None,
         is_featured: bool | None = None,
-    ) -> "Service":
+    ) -> Service:
         """Update service details."""
         return replace(
             self,
@@ -210,7 +210,7 @@ class Service:
             updated_at=datetime.now(UTC),
         )
 
-    def update_stats(self, rating: float, review_count: int) -> "Service":
+    def update_stats(self, rating: float, review_count: int) -> Service:
         """Update service statistics."""
         return replace(
             self,
@@ -219,7 +219,7 @@ class Service:
             updated_at=datetime.now(UTC),
         )
 
-    def mark_as_featured(self) -> "Service":
+    def mark_as_featured(self) -> Service:
         """Mark the service as featured."""
         return replace(self, is_featured=True, updated_at=datetime.now(UTC))
 

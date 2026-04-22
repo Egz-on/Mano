@@ -41,7 +41,7 @@ class Availability:
         is_available: bool | None = None,
         specific_date: datetime | None = None,
         updated_at: datetime | None = None,
-    ) -> "Availability":
+    ) -> Availability:
         """Update availability details."""
         return replace(
             self,

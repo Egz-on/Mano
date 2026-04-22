@@ -101,7 +101,7 @@ class Review:
         service_id: ServiceId,
         rating: int,
         comment: str,
-    ) -> "Review":
+    ) -> Review:
         """Create a new Review with validation."""
         now = datetime.now(UTC)
 
@@ -129,7 +129,7 @@ class Review:
         guest_name: str | None = None,
         guest_email: str | None = None,
         status: str = "approved",
-    ) -> "Review":
+    ) -> Review:
         """Create a public review from an authenticated or guest client."""
         now = datetime.now(UTC)
         return cls(
@@ -146,7 +146,7 @@ class Review:
             updated_at=now,
         )
 
-    def update_content(self, *, rating: int | None = None, comment: str | None = None) -> "Review":
+    def update_content(self, *, rating: int | None = None, comment: str | None = None) -> Review:
         """Return a new review with updated review content."""
         return replace(
             self,
@@ -155,7 +155,7 @@ class Review:
             updated_at=datetime.now(UTC),
         )
 
-    def approve(self, *, moderated_by: UserId | None = None, moderation_notes: str | None = None) -> "Review":
+    def approve(self, *, moderated_by: UserId | None = None, moderation_notes: str | None = None) -> Review:
         """Mark the review as approved."""
         return replace(
             self,
@@ -166,7 +166,7 @@ class Review:
             updated_at=datetime.now(UTC),
         )
 
-    def reject(self, *, moderated_by: UserId | None = None, moderation_notes: str | None = None) -> "Review":
+    def reject(self, *, moderated_by: UserId | None = None, moderation_notes: str | None = None) -> Review:
         """Mark the review as rejected."""
         return replace(
             self,

@@ -1,18 +1,17 @@
-from fastapi import APIRouter, HTTPException, Query
-from fastapi import Depends
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from mano.dependencies import get_db_session, get_review_use_cases
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from mano.application.dtos.review_dtos import CreatePublicReviewCommand, UpdateReviewRequest
+from mano.application.use_cases.review_use_cases import ReviewUseCases
+from mano.dependencies import get_review_use_cases
+from mano.domain.exceptions.review_exceptions import ReviewNotFound, ReviewValidationError
 from mano.domain.models.review import (
     Review,
     ReviewId,
 )
-from mano.presentation.schemas.review_schema import ReviewCreateSchema, ReviewResponseSchema, ReviewUpdateSchema
 from mano.domain.models.service_model import ServiceId
-from mano.application.dtos.review_dtos import CreatePublicReviewCommand, UpdateReviewRequest
-from mano.application.use_cases.review_use_cases import ReviewUseCases
-from mano.domain.exceptions.review_exceptions import ReviewNotFound, ReviewValidationError
+from mano.presentation.schemas.review_schema import ReviewCreateSchema, ReviewResponseSchema, ReviewUpdateSchema
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
@@ -40,7 +39,6 @@ def _to_response(review: Review) -> ReviewResponseSchema:
 async def create_review(
     payload: ReviewCreateSchema,
     use_case: ReviewUseCases = Depends(get_review_use_cases),
-    db_session: AsyncSession = Depends(get_db_session),
 ) -> ReviewResponseSchema:
     """
     Create a new review.
@@ -88,7 +86,6 @@ async def update_review(
     review_id: UUID,
     payload: ReviewUpdateSchema,
     use_case: ReviewUseCases = Depends(get_review_use_cases),
-    db_session: AsyncSession = Depends(get_db_session),
 ) -> ReviewResponseSchema:
     """Update a review."""
     request = UpdateReviewRequest(
@@ -109,7 +106,6 @@ async def update_review(
 async def delete_review(
     review_id: UUID,
     use_case: ReviewUseCases = Depends(get_review_use_cases),
-    db_session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Delete a review."""
     try:

@@ -7,7 +7,7 @@ from uuid import UUID
 from mano.domain.exceptions.base import ServiceAlreadyExistsError, ServiceNotFoundError
 from mano.domain.models.service_model import ServiceImage
 from ..repositories.image_storage_port import IImageStoragePort
-from ..models.service_model import Service, ServiceId, ProviderId, CategoryId
+from ..models.service_model import Service, ServiceId
 from ..repositories.service_repository import ServiceRepository
 
 

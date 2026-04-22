@@ -49,7 +49,7 @@ class AvailabilityResponseDTO:
     model_config = {"from_attributes": True}
 
     @classmethod
-    def from_domain(cls, availability: Availability) -> "AvailabilityResponseDTO":
+    def from_domain(cls, availability: Availability) -> AvailabilityResponseDTO:
         """Convert domain Availability to AvailabilityResponseDTO."""
         return cls(
             id=availability.id,

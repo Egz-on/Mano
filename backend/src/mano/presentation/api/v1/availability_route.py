@@ -15,7 +15,6 @@ from mano.presentation.schemas.availability_schemas import (
 )
 from mano.utils.pagination import PaginatedResponse, Pagination, PaginationParams
 
-
 router = APIRouter(prefix="/availability", tags=["availability"])
 
 

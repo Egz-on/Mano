@@ -13,7 +13,6 @@ from mano.presentation.schemas.service_schemas import (
 from mano.domain.exceptions.base import DomainError, ServiceNotFoundError, ServiceAlreadyExistsError
 from mano.utils.pagination import Pagination, PaginationParams, PaginatedResponse
 
-
 router = APIRouter(prefix="/services", tags=["services"])
 
 
@@ -28,7 +27,9 @@ def _ensure_can_create_service(*, current_user: UserProfile, provider_id: Provid
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can feature services")
 
 
-def _ensure_can_manage_service(*, current_user: UserProfile, service: Service, requested_featured: bool | None = None) -> None:
+def _ensure_can_manage_service(
+    *, current_user: UserProfile, service: Service, requested_featured: bool | None = None
+) -> None:
     if current_user.is_admin():
         return
     if not current_user.is_provider():
