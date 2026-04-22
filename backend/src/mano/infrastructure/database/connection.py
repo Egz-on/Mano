@@ -38,6 +38,10 @@ class Database:
             finally:
                 await session.close()
 
+    def session_factory(self) -> async_sessionmaker[AsyncSession]:
+        """Return the configured async session factory."""
+        return self._session_factory
+
     async def close(self) -> None:
         """Close database connection."""
         await self._engine.dispose()

@@ -55,6 +55,8 @@ class RedisChatBridge:
         self._pubsub: object | None = None
         self._listener_task: asyncio.Task[None] | None = None
         self._active = False
+        self._rooms: dict[str, int] = {}
+        self._rooms_lock = asyncio.Lock()
 
     @property
     def is_active(self) -> bool:
@@ -69,9 +71,12 @@ class RedisChatBridge:
 
         self._redis_client = redis_client
         self._pubsub = redis_client.pubsub()
-        await self._pubsub.psubscribe("chat:*")
         self._listener_task = asyncio.create_task(self._listen())
         self._active = True
+        async with self._rooms_lock:
+            rooms = list(self._rooms)
+        if rooms:
+            await self._subscribe_rooms(rooms)
 
     async def stop(self) -> None:
         self._active = False
@@ -87,6 +92,30 @@ class RedisChatBridge:
             if callable(close):
                 await close()
             self._pubsub = None
+
+    async def register_room(self, conversation_id: str) -> None:
+        async with self._rooms_lock:
+            ref_count = self._rooms.get(conversation_id, 0) + 1
+            self._rooms[conversation_id] = ref_count
+            should_subscribe = ref_count == 1
+
+        if should_subscribe and self._active:
+            await self._subscribe_rooms([conversation_id])
+
+    async def unregister_room(self, conversation_id: str) -> None:
+        async with self._rooms_lock:
+            ref_count = self._rooms.get(conversation_id, 0)
+            if ref_count <= 1:
+                self._rooms.pop(conversation_id, None)
+                should_unsubscribe = ref_count > 0
+            else:
+                self._rooms[conversation_id] = ref_count - 1
+                should_unsubscribe = False
+
+        if should_unsubscribe and self._active and self._pubsub is not None:
+            unsubscribe = getattr(self._pubsub, "unsubscribe", None)
+            if callable(unsubscribe):
+                await unsubscribe(f"chat:{conversation_id}")
 
     async def fanout(self, conversation_id: str, payload: dict[str, object]) -> None:
         if self._active and self._redis_client is not None:
@@ -111,6 +140,8 @@ class RedisChatBridge:
                     continue
 
                 data = message.get("data")
+                if isinstance(data, bytes):
+                    data = data.decode("utf-8")
                 if not isinstance(data, str):
                     continue
 
@@ -124,6 +155,13 @@ class RedisChatBridge:
         except Exception as exc:  # pragma: no cover - optional infrastructure
             logger.warning("Redis chat subscriber stopped unexpectedly: %s", exc)
             self._active = False
+
+    async def _subscribe_rooms(self, rooms: list[str]) -> None:
+        if not rooms or self._pubsub is None:
+            return
+        subscribe = getattr(self._pubsub, "subscribe", None)
+        if callable(subscribe):
+            await subscribe(*[f"chat:{room}" for room in rooms])
 
 
 chat_connection_manager = ChatConnectionManager()
