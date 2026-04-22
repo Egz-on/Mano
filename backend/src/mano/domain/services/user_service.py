@@ -27,10 +27,18 @@ class UserService:
 
     @staticmethod
     def _from_cached_dict(cached: dict[str, Any]) -> UserProfile:
+        if "name" in cached:
+            name = cached["name"]
+            surname = cached.get("surname", "")
+        else:
+            full_name = str(cached.get("full_name", "")).strip()
+            name, _, surname = full_name.partition(" ")
+
         return UserProfile(
             id=UserId(cached["id"]),
             auth_user_id=UserAuthId(cached["auth_user_id"]),
-            full_name=cached["full_name"],
+            name=name,
+            surname=surname,
             phone=cached["phone"],
             avatar_url=cached.get("avatar_url"),
             bio=cached.get("bio"),
@@ -54,7 +62,7 @@ class UserService:
             raise DomainError(f"User with auth ID {user.auth_user_id} already exists")
 
         if not user.has_complete_profile():
-            raise DomainError("Profile must have full_name and phone")
+            raise DomainError("Profile must have name and phone")
         if user.is_provider() and not user.company_name:
             raise DomainError("Providers must provide company name")
 

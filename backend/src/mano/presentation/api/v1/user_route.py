@@ -35,7 +35,8 @@ async def list_users(
             UserProfileResponse(
                 id=user.id,
                 auth_user_id=user.auth_user_id,
-                full_name=user.full_name,
+                name=user.name,
+                surname=user.surname,
                 phone=user.phone,
                 avatar_url=user.avatar_url,
                 bio=user.bio,
@@ -63,7 +64,8 @@ async def get_my_profile(current_user: UserProfile = Depends(get_current_user)) 
     return UserProfileResponse(
         id=UUID(current_user.id.value),
         auth_user_id=UUID(current_user.auth_user_id.value),
-        full_name=current_user.full_name,
+        name=current_user.name,
+        surname=current_user.surname,
         phone=current_user.phone,
         avatar_url=current_user.avatar_url,
         bio=current_user.bio,
@@ -87,7 +89,8 @@ async def get_user(user_id: str, use_case: UserUseCases = Depends(get_user_use_c
         return UserProfileResponse(
             id=result.id,
             auth_user_id=result.auth_user_id,
-            full_name=result.full_name,
+            name=result.name,
+            surname=result.surname,
             phone=result.phone,
             avatar_url=result.avatar_url,
             bio=result.bio,
@@ -120,7 +123,8 @@ async def update_my_profile(
     return UserProfileResponse(
         id=updated.id,
         auth_user_id=updated.auth_user_id,
-        full_name=updated.full_name,
+        name=updated.name,
+        surname=updated.surname,
         phone=updated.phone,
         avatar_url=updated.avatar_url,
         bio=updated.bio,
@@ -153,7 +157,8 @@ async def update_user_by_id(
     return UserProfileResponse(
         id=updated.id,
         auth_user_id=updated.auth_user_id,
-        full_name=updated.full_name,
+        name=updated.name,
+        surname=updated.surname,
         phone=updated.phone,
         avatar_url=updated.avatar_url,
         bio=updated.bio,

@@ -8,7 +8,6 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, field_validator
 import re
 
-
 # ============================================
 # REQUEST DTOs (Input)
 # ============================================
@@ -19,7 +18,8 @@ class UserRegisterRequest(BaseModel):
 
     email: EmailStr = Field(..., description="User email address")
     password: str = Field(..., min_length=8, max_length=128, description="Password (min 8 chars)")
-    full_name: str = Field(..., min_length=2, max_length=255, description="Full name")
+    name: str = Field(..., min_length=1, max_length=255, description="First name")
+    surname: str = Field(..., min_length=1, max_length=255, description="Last name")
     phone: str = Field(..., description="Phone number (+38970123456)")
     role: str = Field(default="provider", description="User role: provider")
 
@@ -49,7 +49,8 @@ class UserRegisterRequest(BaseModel):
             "example": {
                 "email": "user@example.com",
                 "password": "securepass123",
-                "full_name": "Arben Ahmeti",
+                "name": "Arben",
+                "surname": "Ahmeti",
                 "phone": "+38970123456",
                 "role": "provider",
                 "city": "Tetovo",
@@ -70,7 +71,8 @@ class UserLoginRequest(BaseModel):
 class UserProfileUpdateRequest(BaseModel):
     """Update user profile request."""
 
-    full_name: str | None = Field(None, min_length=2, max_length=255)
+    name: str | None = Field(None, min_length=1, max_length=255)
+    surname: str | None = Field(None, min_length=1, max_length=255)
     phone: str | None = Field(None, description="Phone number")
     avatar_url: str | None = Field(None, max_length=500)
     bio: str | None = Field(None, max_length=1000)
@@ -95,7 +97,8 @@ class UserProfileUpdateRequest(BaseModel):
     model_config = {
         "json_schema_extra": {
             "example": {
-                "full_name": "Arben Ahmeti",
+                "name": "Arben",
+                "surname": "Ahmeti",
                 "phone": "+38970555444",
                 "city": "Tetovo",
                 "bio": "Usta me përvojë 10 vjeçare",
@@ -146,7 +149,8 @@ class UserProfileResponse(BaseModel):
     auth_user_id: UUID = Field(..., description="Authentication user ID")
 
     # Basic info
-    full_name: str
+    name: str
+    surname: str
     phone: str
     avatar_url: str | None = None
     bio: str | None = None
@@ -173,7 +177,8 @@ class UserProfileResponse(BaseModel):
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "auth_user_id": "987e6543-e21b-98d7-b654-321098765432",
-                "full_name": "Arben Ahmeti",
+                "name": "Arben",
+                "surname": "Ahmeti",
                 "phone": "+38970123456",
                 "avatar_url": "https://example.com/avatar.jpg",
                 "bio": "Usta me përvojë",
@@ -194,7 +199,8 @@ class UserPublicResponse(BaseModel):
     """Public user profile (limited info for listings)."""
 
     id: UUID
-    full_name: str
+    name: str
+    surname: str
     avatar_url: str | None = None
     role: str
     city: str | None = None
@@ -210,7 +216,8 @@ class UserPublicResponse(BaseModel):
         "json_schema_extra": {
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
-                "full_name": "Arben Ahmeti",
+                "name": "Arben",
+                "surname": "Ahmeti",
                 "avatar_url": "https://example.com/avatar.jpg",
                 "role": "provider",
                 "city": "Tetovo",
@@ -238,7 +245,8 @@ class UserListResponse(BaseModel):
                 "users": [
                     {
                         "id": "123e4567-e89b-12d3-a456-426614174000",
-                        "full_name": "Arben Ahmeti",
+                        "name": "Arben",
+                        "surname": "Ahmeti",
                         "role": "provider",
                         "city": "Tetovo",
                         "is_verified": True,

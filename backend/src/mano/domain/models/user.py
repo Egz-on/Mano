@@ -53,14 +53,16 @@ class UserAuthId:
     def __str__(self) -> str:
         return self.value
 
+
 @dataclass(frozen=True)
 class UserProfile:
     """Immutable user profile entity."""
 
     id: UserId
     auth_user_id: UserAuthId
-    full_name: str
+    name: str
     phone: str
+    surname: str = ""
     avatar_url: str | None = None
     bio: str | None = None
     role: UserRole = UserRole.client
@@ -77,12 +79,20 @@ class UserProfile:
     total_reviews: int = 0
 
     def __post_init__(self) -> None:
-        if not self.full_name.strip():
-            raise ValueError("Full name cannot be empty")
+        normalized_name = self.name.strip()
+        normalized_surname = self.surname.strip()
+        if not normalized_name:
+            raise ValueError("Name cannot be empty")
         if not self.phone.strip():
             raise ValueError("Phone cannot be empty")
         if self.years_of_experience is not None and self.years_of_experience < 0:
             raise ValueError("Years of experience cannot be negative")
+        object.__setattr__(self, "name", normalized_name)
+        object.__setattr__(self, "surname", normalized_surname)
+
+    @property
+    def full_name(self) -> str:
+        return " ".join(part for part in [self.name, self.surname] if part)
 
     def is_provider(self) -> bool:
         return self.role == UserRole.provider
@@ -94,19 +104,20 @@ class UserProfile:
         return self.role == UserRole.admin
 
     def has_complete_profile(self) -> bool:
-        return bool(self.full_name.strip() and self.phone.strip())
+        return bool(self.name.strip() and self.phone.strip())
 
     def get_display_name(self) -> str:
         if self.company_name and self.is_provider():
             return self.company_name
         return self.full_name
 
-    def update_last_login(self) -> "UserProfile":
+    def update_last_login(self) -> UserProfile:
         return replace(self, last_login=datetime.now(UTC), updated_at=datetime.now(UTC))
 
     def update_profile(
         self,
-        full_name: str | None = None,
+        name: str | None = None,
+        surname: str | None = None,
         phone: str | None = None,
         avatar_url: str | None = None,
         bio: str | None = None,
@@ -114,11 +125,13 @@ class UserProfile:
         address: str | None = None,
         years_of_experience: int | None = None,
         company_name: str | None = None,
-    ) -> "UserProfile":
+    ) -> UserProfile:
         updates: dict[str, Any] = {"updated_at": datetime.now(UTC)}
 
-        if full_name is not None:
-            updates["full_name"] = full_name
+        if name is not None:
+            updates["name"] = name
+        if surname is not None:
+            updates["surname"] = surname
         if phone is not None:
             updates["phone"] = phone
         if avatar_url is not None:
@@ -136,15 +149,15 @@ class UserProfile:
 
         return replace(self, **updates)
 
-    def change_role(self, role: UserRole) -> "UserProfile":
+    def change_role(self, role: UserRole) -> UserProfile:
         """Return a new profile with an updated role."""
         return replace(self, role=role, updated_at=datetime.now(UTC))
 
-    def replace_profile_metadata(self, profile_metadata: dict[str, Any]) -> "UserProfile":
+    def replace_profile_metadata(self, profile_metadata: dict[str, Any]) -> UserProfile:
         """Return a new profile with replaced metadata."""
         return replace(self, profile_metadata=profile_metadata, updated_at=datetime.now(UTC))
 
-    def update_stats(self, total_services: int, average_rating: float, total_reviews: int) -> "UserProfile":
+    def update_stats(self, total_services: int, average_rating: float, total_reviews: int) -> UserProfile:
         return replace(self, total_services=total_services, average_rating=average_rating, total_reviews=total_reviews)
 
     def to_dict(self) -> dict[str, Any]:
@@ -152,7 +165,8 @@ class UserProfile:
         return {
             "id": str(self.id),
             "auth_user_id": auth_user_id,
-            "full_name": self.full_name,
+            "name": self.name,
+            "surname": self.surname,
             "phone": self.phone,
             "avatar_url": self.avatar_url,
             "bio": self.bio,

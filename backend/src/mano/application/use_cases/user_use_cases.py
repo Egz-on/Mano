@@ -27,7 +27,8 @@ class UserUseCases:
         new_user = UserProfile(
             id=UserId(),
             auth_user_id=UserAuthId(value=uuid_to_str(request.auth_user_id)),
-            full_name=request.full_name,
+            name=request.name,
+            surname=request.surname,
             phone=str(phone),
             avatar_url=request.avatar_url,
             bio=request.bio,
@@ -60,7 +61,8 @@ class UserUseCases:
             raise DomainError("Can only update your own profile")
 
         updated_user = user.update_profile(
-            full_name=request.full_name,
+            name=request.name,
+            surname=request.surname,
             phone=request.phone,
             avatar_url=request.avatar_url,
             bio=request.bio,

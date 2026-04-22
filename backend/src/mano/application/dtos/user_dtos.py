@@ -15,7 +15,8 @@ class CreateUserRequest:
     """DTO for creating a user profile."""
 
     auth_user_id: UUID
-    full_name: str
+    name: str
+    surname: str
     phone: str
     avatar_url: str | None = None
     bio: str | None = None
@@ -31,7 +32,8 @@ class CreateUserRequest:
 class UpdateUserRequest:
     """DTO for updating user profile."""
 
-    full_name: str | None = None
+    name: str | None = None
+    surname: str | None = None
     phone: str | None = None
     avatar_url: str | None = None
     bio: str | None = None
@@ -49,7 +51,8 @@ class UserResponse:
 
     id: UUID
     auth_user_id: UUID
-    full_name: str
+    name: str
+    surname: str
     phone: str
     avatar_url: str | None
     bio: str | None
@@ -63,11 +66,12 @@ class UserResponse:
     last_login: datetime | None
 
     @classmethod
-    def from_domain(cls, user: UserProfile) -> "UserResponse":
+    def from_domain(cls, user: UserProfile) -> UserResponse:
         return cls(
             id=UUID(user.id.value),
             auth_user_id=UUID(user.auth_user_id.value),
-            full_name=user.full_name,
+            name=user.name,
+            surname=user.surname,
             phone=user.phone,
             avatar_url=user.avatar_url,
             bio=user.bio,
