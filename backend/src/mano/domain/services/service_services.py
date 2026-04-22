@@ -74,6 +74,14 @@ class ServiceService:
         """List all services with business logic."""
         return await self.service_repository.list_services()
 
+    async def list_services_nearby(self, *, latitude: float, longitude: float, radius_km: float) -> list[Service]:
+        """List services whose providers are within a search radius."""
+        return await self.service_repository.list_services_nearby(
+            latitude=latitude,
+            longitude=longitude,
+            radius_km=radius_km,
+        )
+
     async def get_service_by_title(self, title: str) -> Service | None:
         """Get service by title with business logic."""
         return await self.service_repository.get_service_by_title(title)

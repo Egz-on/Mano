@@ -37,3 +37,8 @@ class ServiceRepository(ABC):
     async def get_service_by_title(self, title: str) -> Service | None:
         """Get service by title."""
         ...
+
+    @abstractmethod
+    async def list_services_nearby(self, *, latitude: float, longitude: float, radius_km: float) -> list[Service]:
+        """List services whose providers are within the given radius."""
+        ...

@@ -78,6 +78,15 @@ class ServiceUseCases:
         services = await self._service_service.list_services()
         return [ServiceResponseDTO.from_domain(s) for s in services]
 
+    async def list_services_nearby(self, *, latitude: float, longitude: float, radius_km: float) -> list[ServiceResponseDTO]:
+        """List services whose providers are within a search radius."""
+        services = await self._service_service.list_services_nearby(
+            latitude=latitude,
+            longitude=longitude,
+            radius_km=radius_km,
+        )
+        return [ServiceResponseDTO.from_domain(s) for s in services]
+
     async def get_service_by_title(self, title: str) -> ServiceResponseDTO | None:
         """Get service by title."""
         service = await self._service_service.get_service_by_title(title)

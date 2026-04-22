@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select, delete
+from math import asin, cos, radians, sin, sqrt
+
+from geoalchemy2 import Geography
+from shapely import wkt
+from sqlalchemy import cast, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from mano.domain.exceptions.base import ServiceNotFoundError
 from mano.domain.models.service_model import CategoryId, ProviderId, Service, ServiceId
 from mano.domain.repositories.service_repository import ServiceRepository
-from mano.infrastructure.database.models import ServiceModel
+from mano.infrastructure.database.models import ServiceModel, UserProfileModel
 from mano.common.uuid_utils import uuid_to_str
 
 
@@ -17,6 +21,20 @@ class SQLAlchemyServiceRepository(ServiceRepository):
     def __init__(self, session: AsyncSession) -> None:
         """Initialize repository with database session."""
         self._session = session
+
+    @staticmethod
+    def _distance_km(*, latitude_a: float, longitude_a: float, latitude_b: float, longitude_b: float) -> float:
+        earth_radius_km = 6371.0
+        delta_lat = radians(latitude_b - latitude_a)
+        delta_lon = radians(longitude_b - longitude_a)
+        latitude_a_rad = radians(latitude_a)
+        latitude_b_rad = radians(latitude_b)
+
+        haversine = (
+            sin(delta_lat / 2) ** 2
+            + cos(latitude_a_rad) * cos(latitude_b_rad) * sin(delta_lon / 2) ** 2
+        )
+        return 2 * earth_radius_km * asin(sqrt(haversine))
 
     # =====================
     # Mapping helpers
@@ -127,3 +145,44 @@ class SQLAlchemyServiceRepository(ServiceRepository):
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
+
+    async def list_services_nearby(self, *, latitude: float, longitude: float, radius_km: float) -> list[Service]:
+        """List services whose providers are within a search radius."""
+        bind = self._session.bind
+        if bind is None or bind.dialect.name != "postgresql":
+            stmt = (
+                select(ServiceModel, UserProfileModel.location)
+                .join(UserProfileModel, ServiceModel.provider_id == UserProfileModel.id)
+                .where(ServiceModel.is_active.is_(True))
+                .where(UserProfileModel.location.is_not(None))
+            )
+            result = await self._session.execute(stmt)
+            matches: list[tuple[float, Service]] = []
+            for service_model, raw_location in result.all():
+                point = wkt.loads(raw_location)
+                distance_km = self._distance_km(
+                    latitude_a=latitude,
+                    longitude_a=longitude,
+                    latitude_b=float(point.y),
+                    longitude_b=float(point.x),
+                )
+                if distance_km <= radius_km:
+                    matches.append((distance_km, self._to_domain(service_model)))
+            matches.sort(key=lambda item: item[0])
+            return [service for _, service in matches]
+
+        geography_type = Geography(geometry_type="POINT", srid=4326)
+        reference_point = cast(func.ST_SetSRID(func.ST_MakePoint(longitude, latitude), 4326), geography_type)
+        provider_location = cast(UserProfileModel.location, geography_type)
+        distance_meters = radius_km * 1000.0
+
+        stmt = (
+            select(ServiceModel)
+            .join(UserProfileModel, ServiceModel.provider_id == UserProfileModel.id)
+            .where(ServiceModel.is_active.is_(True))
+            .where(UserProfileModel.location.is_not(None))
+            .where(func.ST_DWithin(provider_location, reference_point, distance_meters))
+            .order_by(func.ST_Distance(provider_location, reference_point))
+        )
+        result = await self._session.execute(stmt)
+        return [self._to_domain(model) for model in result.scalars().all()]
