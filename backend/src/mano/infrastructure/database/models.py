@@ -82,6 +82,11 @@ class UserProfileModel(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
     last_login = Column(DateTime(timezone=True), nullable=True)
+    is_online = Column(Boolean, default=False, nullable=False)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    approval_status = Column(String(20), default="pending", nullable=False)
+    fcm_token = Column(String(500), nullable=True)
 
     services = relationship("ServiceModel", back_populates="provider", cascade="all, delete-orphan")
     reviews_received = relationship("ReviewModel", foreign_keys="ReviewModel.provider_id", back_populates="provider")
