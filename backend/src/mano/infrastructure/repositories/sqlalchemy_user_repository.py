@@ -35,10 +35,16 @@ class SQLAlchemyUserRepository(UserRepository):
             address=cast(str | None, model.address),
             years_of_experience=cast(int | None, model.years_of_experience),
             company_name=cast(str | None, model.company_name),
+            is_active=cast(bool, model.is_active),
             profile_metadata=cast(dict[str, Any], model.profile_metadata or {}),
             created_at=cast(datetime, model.created_at),
             updated_at=cast(datetime, model.updated_at),
             last_login=cast(datetime | None, model.last_login),
+            is_online=cast(bool, model.is_online),
+            latitude=cast(float | None, model.latitude),
+            longitude=cast(float | None, model.longitude),
+            approval_status=cast(str, model.approval_status),
+            fcm_token=cast(str | None, model.fcm_token),
         )
 
     @staticmethod
@@ -54,9 +60,15 @@ class SQLAlchemyUserRepository(UserRepository):
         model.address = domain.address
         model.years_of_experience = domain.years_of_experience
         model.company_name = domain.company_name
+        model.is_active = domain.is_active
         model.profile_metadata = domain.profile_metadata
         model.updated_at = domain.updated_at
         model.last_login = domain.last_login
+        model.is_online = domain.is_online
+        model.latitude = domain.latitude
+        model.longitude = domain.longitude
+        model.approval_status = domain.approval_status
+        model.fcm_token = domain.fcm_token
 
     async def create_user_profile(self, user: UserProfile) -> UserProfile:
         model = UserProfileModel(
@@ -72,10 +84,16 @@ class SQLAlchemyUserRepository(UserRepository):
             address=user.address,
             years_of_experience=user.years_of_experience,
             company_name=user.company_name,
+            is_active=user.is_active,
             profile_metadata=user.profile_metadata or {},
             created_at=user.created_at,
             updated_at=user.updated_at,
             last_login=user.last_login,
+            is_online=user.is_online,
+            latitude=user.latitude,
+            longitude=user.longitude,
+            approval_status=user.approval_status,
+            fcm_token=user.fcm_token,
         )
         self._session.add(model)
         await self._session.flush()

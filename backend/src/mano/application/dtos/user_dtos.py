@@ -25,6 +25,12 @@ class CreateUserRequest:
     address: str | None = None
     years_of_experience: int | None = None
     company_name: str | None = None
+    is_active: bool = True
+    is_online: bool = False
+    latitude: float | None = None
+    longitude: float | None = None
+    approval_status: str = "pending"
+    fcm_token: str | None = None
     profile_metadata: dict[str, Any] | None = None
 
 
@@ -42,6 +48,12 @@ class UpdateUserRequest:
     role: UserRole | None = None
     years_of_experience: int | None = None
     company_name: str | None = None
+    is_active: bool | None = None
+    is_online: bool | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    approval_status: str | None = None
+    fcm_token: str | None = None
     profile_metadata: dict[str, Any] | None = None
 
 
@@ -61,9 +73,15 @@ class UserResponse:
     address: str | None
     years_of_experience: int | None
     company_name: str | None
+    is_active: bool
     created_at: datetime
     updated_at: datetime
     last_login: datetime | None
+    is_online: bool
+    latitude: float | None
+    longitude: float | None
+    approval_status: str
+    fcm_token: str | None
 
     @classmethod
     def from_domain(cls, user: UserProfile) -> UserResponse:
@@ -80,7 +98,13 @@ class UserResponse:
             address=user.address,
             years_of_experience=user.years_of_experience,
             company_name=user.company_name,
+            is_active=user.is_active,
             created_at=user.created_at,
             updated_at=user.updated_at,
             last_login=user.last_login,
+            is_online=user.is_online,
+            latitude=user.latitude,
+            longitude=user.longitude,
+            approval_status=user.approval_status,
+            fcm_token=user.fcm_token,
         )

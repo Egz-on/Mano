@@ -3,6 +3,7 @@ User Schema Definitions
 """
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -82,6 +83,15 @@ class UserProfileUpdateRequest(BaseModel):
     # Provider-specific
     years_of_experience: int | None = Field(None, ge=0, le=50)
     company_name: str | None = Field(None, max_length=255)
+    latitude: float | None = Field(None, ge=-90, le=90)
+    longitude: float | None = Field(None, ge=-180, le=180)
+    fcm_token: str | None = Field(None, max_length=500)
+    is_online: bool | None = Field(None)
+
+    # Admin-only
+    role: Literal["admin", "provider", "client"] | None = Field(None, description="User role")
+    is_active: bool | None = Field(None)
+    approval_status: str | None = Field(None, max_length=20)
 
     @field_validator("phone")
     @classmethod
@@ -103,6 +113,8 @@ class UserProfileUpdateRequest(BaseModel):
                 "city": "Tetovo",
                 "bio": "Usta me përvojë 10 vjeçare",
                 "years_of_experience": 10,
+                "latitude": 41.9981,
+                "longitude": 21.4254,
             }
         }
     }
@@ -166,6 +178,14 @@ class UserProfileResponse(BaseModel):
     years_of_experience: int | None = None
     company_name: str | None = None
 
+    # Account/status
+    is_active: bool
+    is_online: bool
+    approval_status: str
+    latitude: float | None = None
+    longitude: float | None = None
+    fcm_token: str | None = None
+
     # Timestamps
     created_at: datetime
     updated_at: datetime
@@ -187,6 +207,12 @@ class UserProfileResponse(BaseModel):
                 "address": None,
                 "years_of_experience": 10,
                 "company_name": "Ahmeti Construction",
+                "is_active": True,
+                "is_online": False,
+                "approval_status": "approved",
+                "latitude": 41.9981,
+                "longitude": 21.4254,
+                "fcm_token": "device-token",
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-15T10:30:00Z",
                 "last_login": "2024-01-20T14:25:00Z",

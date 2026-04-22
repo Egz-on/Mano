@@ -38,13 +38,23 @@ async def test_get_my_profile(async_client: AsyncClient, test_user: dict[str, An
 async def test_update_my_profile(
     async_client: AsyncClient, test_user: dict[str, Any], auth_header_client: dict[str, str]
 ):
-    payload = {"name": "Updated", "surname": "Name", "city": "Skopje"}
+    payload = {
+        "name": "Updated",
+        "surname": "Name",
+        "city": "Skopje",
+        "latitude": 41.9981,
+        "longitude": 21.4254,
+        "fcm_token": "test-device-token",
+    }
     response = await async_client.put("/api/v1/users/me", json=payload, headers=auth_header_client)
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Updated"
     assert data["surname"] == "Name"
     assert data["city"] == "Skopje"
+    assert data["latitude"] == 41.9981
+    assert data["longitude"] == 21.4254
+    assert data["fcm_token"] == "test-device-token"
 
 
 @pytest.mark.asyncio

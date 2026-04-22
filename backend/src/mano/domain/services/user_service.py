@@ -47,10 +47,16 @@ class UserService:
             address=cached.get("address"),
             years_of_experience=cached.get("years_of_experience"),
             company_name=cached.get("company_name"),
+            is_active=cached.get("is_active", True),
             profile_metadata=cached.get("profile_metadata") or {},
             created_at=datetime.fromisoformat(cached["created_at"]),
             updated_at=datetime.fromisoformat(cached["updated_at"]),
             last_login=(datetime.fromisoformat(cached["last_login"]) if cached.get("last_login") else None),
+            is_online=cached.get("is_online", False),
+            latitude=cached.get("latitude"),
+            longitude=cached.get("longitude"),
+            approval_status=cached.get("approval_status", "pending"),
+            fcm_token=cached.get("fcm_token"),
             total_services=cached.get("total_services", 0),
             average_rating=cached.get("average_rating", 0.0),
             total_reviews=cached.get("total_reviews", 0),
@@ -126,6 +132,11 @@ class UserService:
             return None
 
     async def update_user_profile(self, user: UserProfile) -> UserProfile:
+        if not user.has_complete_profile():
+            raise DomainError("Profile must have name and phone")
+        if user.is_provider() and not user.company_name:
+            raise DomainError("Providers must provide company name")
+
         result = await self.user_repository.update_user(user)
 
         if self.cache:

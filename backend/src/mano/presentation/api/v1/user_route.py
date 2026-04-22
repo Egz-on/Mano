@@ -8,8 +8,35 @@ from mano.domain.exceptions.base import UserNotFoundError, DomainError
 from mano.utils.pagination import Pagination, PaginationParams, PaginatedResponse
 from mano.dependencies import strict_auth_limiter
 from fastapi import Request
+from uuid import UUID
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+def _to_profile_response(user: UserProfile | object) -> UserProfileResponse:
+    return UserProfileResponse(
+        id=UUID(getattr(user.id, "value", str(user.id))),
+        auth_user_id=UUID(getattr(user.auth_user_id, "value", str(user.auth_user_id))),
+        name=user.name,
+        surname=user.surname,
+        phone=user.phone,
+        avatar_url=user.avatar_url,
+        bio=user.bio,
+        role=user.role,
+        city=user.city,
+        address=user.address,
+        years_of_experience=user.years_of_experience,
+        company_name=user.company_name,
+        is_active=user.is_active,
+        is_online=user.is_online,
+        approval_status=user.approval_status,
+        latitude=user.latitude,
+        longitude=user.longitude,
+        fcm_token=user.fcm_token,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+        last_login=user.last_login,
+    )
 
 
 @router.get("/", response_model=PaginatedResponse[UserProfileResponse], summary="List users")
@@ -31,26 +58,7 @@ async def list_users(
                 reverse = params.order == "desc"
                 users = sorted(users, key=lambda u: getattr(u, sort_field), reverse=reverse)
 
-        user_responses = [
-            UserProfileResponse(
-                id=user.id,
-                auth_user_id=user.auth_user_id,
-                name=user.name,
-                surname=user.surname,
-                phone=user.phone,
-                avatar_url=user.avatar_url,
-                bio=user.bio,
-                role=user.role,
-                city=user.city,
-                address=user.address,
-                years_of_experience=user.years_of_experience,
-                company_name=user.company_name,
-                created_at=user.created_at,
-                updated_at=user.updated_at,
-                last_login=user.last_login,
-            )
-            for user in users
-        ]
+        user_responses = [_to_profile_response(user) for user in users]
         return Pagination.paginate_items(user_responses, params)
     except DomainError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -59,25 +67,7 @@ async def list_users(
 @router.get("/me", response_model=UserProfileResponse, summary="my profile")
 async def get_my_profile(current_user: UserProfile = Depends(get_current_user)) -> UserProfileResponse:
     """Get current user's profile."""
-    from uuid import UUID
-
-    return UserProfileResponse(
-        id=UUID(current_user.id.value),
-        auth_user_id=UUID(current_user.auth_user_id.value),
-        name=current_user.name,
-        surname=current_user.surname,
-        phone=current_user.phone,
-        avatar_url=current_user.avatar_url,
-        bio=current_user.bio,
-        role=current_user.role,
-        city=current_user.city,
-        address=current_user.address,
-        years_of_experience=current_user.years_of_experience,
-        company_name=current_user.company_name,
-        created_at=current_user.created_at,
-        updated_at=current_user.updated_at,
-        last_login=current_user.last_login,
-    )
+    return _to_profile_response(current_user)
 
 
 @router.get("/{user_id}", response_model=UserProfileResponse, summary="Get user by ID")
@@ -86,23 +76,7 @@ async def get_user(user_id: str, use_case: UserUseCases = Depends(get_user_use_c
     try:
         result = await use_case.get_user(user_id)
 
-        return UserProfileResponse(
-            id=result.id,
-            auth_user_id=result.auth_user_id,
-            name=result.name,
-            surname=result.surname,
-            phone=result.phone,
-            avatar_url=result.avatar_url,
-            bio=result.bio,
-            role=result.role,
-            city=result.city,
-            address=result.address,
-            years_of_experience=result.years_of_experience,
-            company_name=result.company_name,
-            created_at=result.created_at,
-            updated_at=result.updated_at,
-            last_login=result.last_login,
-        )
+        return _to_profile_response(result)
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     except DomainError as e:
@@ -120,23 +94,7 @@ async def update_my_profile(
     """Users update their own profile."""
     dto = UpdateUserRequest(**payload.model_dump(exclude_unset=True))
     updated = await use_cases.update_user_profile(current_user.id.value, dto, current_user)
-    return UserProfileResponse(
-        id=updated.id,
-        auth_user_id=updated.auth_user_id,
-        name=updated.name,
-        surname=updated.surname,
-        phone=updated.phone,
-        avatar_url=updated.avatar_url,
-        bio=updated.bio,
-        role=updated.role,
-        city=updated.city,
-        address=updated.address,
-        years_of_experience=updated.years_of_experience,
-        company_name=updated.company_name,
-        created_at=updated.created_at,
-        updated_at=updated.updated_at,
-        last_login=updated.last_login,
-    )
+    return _to_profile_response(updated)
 
 
 @strict_auth_limiter
@@ -154,20 +112,4 @@ async def update_user_by_id(
 
     dto = UpdateUserRequest(**payload.model_dump(exclude_unset=True))
     updated = await use_cases.update_user_profile(user_id, dto, current_user)
-    return UserProfileResponse(
-        id=updated.id,
-        auth_user_id=updated.auth_user_id,
-        name=updated.name,
-        surname=updated.surname,
-        phone=updated.phone,
-        avatar_url=updated.avatar_url,
-        bio=updated.bio,
-        role=updated.role,
-        city=updated.city,
-        address=updated.address,
-        years_of_experience=updated.years_of_experience,
-        company_name=updated.company_name,
-        created_at=updated.created_at,
-        updated_at=updated.updated_at,
-        last_login=updated.last_login,
-    )
+    return _to_profile_response(updated)
