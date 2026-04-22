@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from typing import Any
 import uuid
 
+from geoalchemy2 import Geometry
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -24,6 +25,21 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy.types import CHAR, TypeDecorator
 
 from mano.common.constans import FieldLength
+
+
+class LocationGeometry(TypeDecorator):
+    """Use PostGIS geometry in PostgreSQL and plain text elsewhere."""
+
+    impl = Text
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect: Any) -> Any:
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(Geometry(geometry_type="POINT", srid=4326))
+        return dialect.type_descriptor(Text())
+
+
+LOCATION_TYPE = LocationGeometry()
 
 
 class Base(DeclarativeBase):
@@ -83,8 +99,7 @@ class UserProfileModel(Base):
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
     last_login = Column(DateTime(timezone=True), nullable=True)
     is_online = Column(Boolean, default=False, nullable=False)
-    latitude = Column(Float, nullable=True)
-    longitude = Column(Float, nullable=True)
+    location = Column(LOCATION_TYPE, nullable=True)
     approval_status = Column(String(20), default="pending", nullable=False)
     fcm_token = Column(String(500), nullable=True)
 

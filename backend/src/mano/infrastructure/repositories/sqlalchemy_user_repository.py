@@ -5,6 +5,10 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, cast
 
+from geoalchemy2.elements import WKBElement
+from geoalchemy2.shape import from_shape, to_shape
+from shapely import wkt
+from shapely.geometry import Point
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,7 +25,26 @@ class SQLAlchemyUserRepository(UserRepository):
         self._session = session
 
     @staticmethod
+    def _coordinates_from_location(raw_location: WKBElement | str | None) -> tuple[float | None, float | None]:
+        if raw_location is None:
+            return None, None
+
+        point = to_shape(raw_location) if isinstance(raw_location, WKBElement) else wkt.loads(raw_location)
+        return float(point.y), float(point.x)
+
+    def _location_from_coordinates(self, latitude: float | None, longitude: float | None) -> Any:
+        if latitude is None or longitude is None:
+            return None
+
+        point = Point(longitude, latitude)
+        bind = self._session.bind
+        if bind is not None and bind.dialect.name == "sqlite":
+            return point.wkt
+        return from_shape(point, srid=4326)
+
+    @staticmethod
     def _to_domain(model: UserProfileModel) -> UserProfile:
+        latitude, longitude = SQLAlchemyUserRepository._coordinates_from_location(model.location)
         return UserProfile(
             id=UserId(str(model.id)),
             auth_user_id=UserAuthId(str(model.auth_user_id)),
@@ -41,14 +64,13 @@ class SQLAlchemyUserRepository(UserRepository):
             updated_at=cast(datetime, model.updated_at),
             last_login=cast(datetime | None, model.last_login),
             is_online=cast(bool, model.is_online),
-            latitude=cast(float | None, model.latitude),
-            longitude=cast(float | None, model.longitude),
+            latitude=latitude,
+            longitude=longitude,
             approval_status=cast(str, model.approval_status),
             fcm_token=cast(str | None, model.fcm_token),
         )
 
-    @staticmethod
-    def _apply_domain_to_model(domain: UserProfile, model: UserProfileModel) -> None:
+    def _apply_domain_to_model(self, domain: UserProfile, model: UserProfileModel) -> None:
         model.auth_user_id = uuid_to_str(domain.auth_user_id)
         model.name = domain.name
         model.surname = domain.surname
@@ -65,8 +87,7 @@ class SQLAlchemyUserRepository(UserRepository):
         model.updated_at = domain.updated_at
         model.last_login = domain.last_login
         model.is_online = domain.is_online
-        model.latitude = domain.latitude
-        model.longitude = domain.longitude
+        model.location = self._location_from_coordinates(domain.latitude, domain.longitude)
         model.approval_status = domain.approval_status
         model.fcm_token = domain.fcm_token
 
@@ -90,8 +111,7 @@ class SQLAlchemyUserRepository(UserRepository):
             updated_at=user.updated_at,
             last_login=user.last_login,
             is_online=user.is_online,
-            latitude=user.latitude,
-            longitude=user.longitude,
+            location=self._location_from_coordinates(user.latitude, user.longitude),
             approval_status=user.approval_status,
             fcm_token=user.fcm_token,
         )
