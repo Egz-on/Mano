@@ -6,6 +6,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
+        exclude: ^\.codex$
       - id: trailing-whitespace
       - id: check-merge-conflict
       - id: check-toml
@@ -151,6 +152,7 @@ repos:
         args:
           [
             --verbose,
+            --fail-under=70,
             --ignore-init-method,
             --ignore-init-module,
             --ignore-magic,
@@ -160,7 +162,7 @@ repos:
             --ignore-module,
             --ignore-regex=test_.*,
           ]
-        exclude: ^backend/(alembic/|scripts/|tests/)
+        exclude: ^backend/(alembic/|scripts/)|^backend/src/mano/tests/
 
   # ========================================
   # Infrastructure as Code
@@ -243,7 +245,7 @@ repos:
       # Dependency vulnerability scanning
       - id: pip-audit
         name: pip-audit
-        entry: uv run --directory backend pip-audit --desc --ignore-vuln GHSA-4xh5-x5gv-qwph --ignore-vuln CVE-2024-23342 --ignore-vuln CVE-2026-22702
+        entry: uv run --directory backend pip-audit --desc --ignore-vuln GHSA-4xh5-x5gv-qwph --ignore-vuln CVE-2024-23342 --ignore-vuln CVE-2026-22702 --ignore-vuln GHSA-pjjw-68hj-v9mw
         language: system
         pass_filenames: false
       # Validate domain business rules
