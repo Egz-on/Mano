@@ -8,7 +8,6 @@ from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-
 from alembic import context
 
 # Add src directory to Python path
@@ -32,6 +31,33 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 target_metadata = Base.metadata
 
+# Tables where unique constraints are defined via column-level unique=True
+# in models but were also created as named UniqueConstraint in migrations.
+# Alembic sees the DB constraint but not the metadata one, producing false-positive
+# "remove constraint" operations during autogenerate.
+_CONSTRAINT_DRIFT_TABLES = {"auth_credentials", "password_reset_tokens"}
+
+
+def _include_object(object, name, type_, reflected, compare_to):
+    """Skip false-positive unique constraint removals on specific tables.
+
+    When a unique constraint exists in the DB (reflected=True) but has no
+    corresponding metadata object (compare_to=None), Alembic wants to drop it.
+    For tables where unique=True on columns already covers the intent, this
+    is a false positive.
+    """
+    if (
+        type_ == "unique_constraint"
+        and reflected
+        and compare_to is None
+    ):
+        table_name = getattr(object, "table", None)
+        if table_name is not None:
+            table_name = getattr(table_name, "name", table_name)
+        if table_name in _CONSTRAINT_DRIFT_TABLES:
+            return False
+    return True
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
@@ -41,6 +67,8 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+        include_object=_include_object,
     )
 
     with context.begin_transaction():
@@ -49,7 +77,12 @@ def run_migrations_offline() -> None:
 
 def do_run_migrations(connection: Connection) -> None:
     """Run migrations with the given connection."""
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        include_object=_include_object,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
