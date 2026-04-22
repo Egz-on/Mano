@@ -63,7 +63,7 @@ class PasswordResetToken:
         """Return True if the token can still be used."""
         return self.used_at is None and self.expires_at > now
 
-    def mark_used(self, used_at: datetime) -> "PasswordResetToken":
+    def mark_used(self, used_at: datetime) -> PasswordResetToken:
         """Return a new token marked as used."""
         return replace(self, used_at=used_at)
 

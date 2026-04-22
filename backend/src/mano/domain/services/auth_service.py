@@ -41,7 +41,8 @@ class AuthService:
         *,
         email: str,
         password: str,
-        full_name: str,
+        name: str,
+        surname: str,
         phone: str,
         role: UserRole,
         city: str | None,
@@ -62,13 +63,14 @@ class AuthService:
         user_phone = str(PhoneNumber(phone))
         provider_company_name = company_name
         if role == UserRole.provider and not provider_company_name:
-            provider_company_name = f"{full_name} Services"
+            provider_company_name = " ".join(part for part in [name, surname, "Services"] if part)
 
         now = datetime.now(UTC)
         user = UserProfile(
             id=UserId(),
             auth_user_id=auth_user_id,
-            full_name=full_name,
+            name=name,
+            surname=surname,
             phone=user_phone,
             role=role,
             city=city,

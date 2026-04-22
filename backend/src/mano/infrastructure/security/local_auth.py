@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from typing import TypedDict
+from typing import TypedDict, cast
 from uuid import NAMESPACE_DNS, uuid5
 
 from jose import JWTError, jwt
@@ -12,7 +12,8 @@ from jose import JWTError, jwt
 class DemoUser(TypedDict):
     email: str
     password: str
-    full_name: str
+    name: str
+    surname: str
     role: str
     phone: str
     city: str | None
@@ -23,7 +24,8 @@ DEMO_USERS: dict[str, DemoUser] = {
     "admin@mano.com": {
         "email": "admin@mano.com",
         "password": "admin123",
-        "full_name": "System Admin",
+        "name": "System",
+        "surname": "Admin",
         "role": "admin",
         "phone": "+38970111222",
         "city": "Skopje",
@@ -32,7 +34,8 @@ DEMO_USERS: dict[str, DemoUser] = {
     "provider@mano.com": {
         "email": "provider@mano.com",
         "password": "provider123",
-        "full_name": "Default Provider",
+        "name": "Default",
+        "surname": "Provider",
         "role": "provider",
         "phone": "+38970222333",
         "city": "Tetovo",
@@ -41,7 +44,8 @@ DEMO_USERS: dict[str, DemoUser] = {
     "client@mano.com": {
         "email": "client@mano.com",
         "password": "client123",
-        "full_name": "Guest Client",
+        "name": "Guest",
+        "surname": "Client",
         "role": "client",
         "phone": "+38970333444",
         "city": "Skopje",
@@ -50,6 +54,14 @@ DEMO_USERS: dict[str, DemoUser] = {
 }
 
 ALGORITHM = "HS256"
+
+
+def _split_name_parts(full_name: str) -> tuple[str, str]:
+    normalized = " ".join(full_name.split())
+    if not normalized:
+        return "User", ""
+    first_name, separator, remainder = normalized.partition(" ")
+    return first_name, remainder if separator else ""
 
 
 def authenticate_user(email: str, password: str) -> DemoUser | None:
@@ -64,30 +76,40 @@ def create_access_token(
     secret_key: str,
     subject: str,
     role: str,
-    full_name: str,
+    name: str,
+    surname: str,
     expires_minutes: int = 60 * 12,
 ) -> str:
     now = datetime.now(UTC)
     payload = {
         "sub": subject,
         "role": role,
-        "full_name": full_name,
+        "name": name,
+        "surname": surname,
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(minutes=expires_minutes)).timestamp()),
     }
-    return jwt.encode(payload, secret_key, algorithm=ALGORITHM)
+    return cast(str, jwt.encode(payload, secret_key, algorithm=ALGORITHM))
 
 
 def decode_access_token(token: str, *, secret_key: str) -> dict[str, str]:
     try:
-        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
+        payload = cast(dict[str, object], jwt.decode(token, secret_key, algorithms=[ALGORITHM]))
     except JWTError as exc:
         raise ValueError("Invalid token") from exc
 
     sub = payload.get("sub")
     role = payload.get("role")
-    full_name = payload.get("full_name")
+    name = payload.get("name")
+    surname = payload.get("surname")
+    if not isinstance(name, str):
+        name, surname = _split_name_parts(str(payload.get("full_name", "User")))
     if not isinstance(sub, str) or not isinstance(role, str):
         raise ValueError("Invalid token payload")
 
-    return {"sub": sub, "role": role, "full_name": full_name if isinstance(full_name, str) else "User"}
+    return {
+        "sub": sub,
+        "role": role,
+        "name": name,
+        "surname": surname if isinstance(surname, str) else "",
+    }

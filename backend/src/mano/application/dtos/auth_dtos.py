@@ -13,7 +13,8 @@ class RegisterRequest:
 
     email: str
     password: str
-    full_name: str
+    name: str
+    surname: str
     phone: str
     role: UserRole = UserRole.client
     city: str | None = None
@@ -48,5 +49,6 @@ class AuthenticatedUserDTO:
     """DTO representing authenticated user claims."""
 
     email: str
-    full_name: str
+    name: str
+    surname: str
     role: str

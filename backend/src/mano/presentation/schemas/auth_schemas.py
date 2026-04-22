@@ -15,7 +15,8 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
-    full_name: str = Field(..., min_length=2, max_length=255)
+    name: str = Field(..., min_length=1, max_length=255)
+    surname: str = Field(..., min_length=1, max_length=255)
     phone: str = Field(..., min_length=12, max_length=20, description="Phone in +389XXXXXXXX format")
     role: Literal["client", "provider"] = "client"
     city: str | None = Field(default=None, max_length=100)
@@ -33,7 +34,8 @@ class ResetPasswordRequest(BaseModel):
 
 class AuthUserResponse(BaseModel):
     email: EmailStr
-    full_name: str
+    name: str
+    surname: str
     role: str
 
 

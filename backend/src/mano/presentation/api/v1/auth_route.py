@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from mano.application.dtos.auth_dtos import (
     ForgotPasswordRequest as ForgotPasswordRequestDTO,
@@ -13,10 +12,12 @@ from mano.application.dtos.auth_dtos import (
 )
 from mano.application.use_cases.auth_use_cases import AuthUseCases
 from mano.dependencies import (
+    AccessTokenFactory,
+    authenticate_demo_credentials,
+    get_access_token_factory,
     get_auth_use_cases,
     get_current_user,
-    get_db_session,
-    get_settings,
+    get_is_development,
     lenient_auth_limiter,
     moderate_auth_limiter,
     strict_auth_limiter,
@@ -28,8 +29,6 @@ from mano.domain.exceptions.base import (
     InvalidPasswordResetTokenError,
 )
 from mano.domain.models.user import UserProfile
-from mano.infrastructure.config.settings import Settings
-from mano.infrastructure.security.local_auth import authenticate_user, create_access_token
 from mano.presentation.schemas.auth_schemas import (
     AuthUserResponse,
     ForgotPasswordRequest,
@@ -44,17 +43,18 @@ from mano.presentation.schemas.auth_schemas import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def _build_login_response(user_email: str, full_name: str, role: str, settings: Settings) -> LoginResponse:
-    access_token = create_access_token(
-        secret_key=settings.secret_key or "dev-secret-change-me",
-        subject=user_email,
-        role=role,
-        full_name=full_name,
-    )
+def _build_login_response(
+    user_email: str,
+    name: str,
+    surname: str,
+    role: str,
+    create_access_token_for_user: AccessTokenFactory,
+) -> LoginResponse:
+    access_token = create_access_token_for_user(user_email, role, name, surname)
     return LoginResponse(
         access_token=access_token,
         expires_in=60 * 60 * 12,
-        user=AuthUserResponse(email=user_email, full_name=full_name, role=role),
+        user=AuthUserResponse(email=user_email, name=name, surname=surname, role=role),
     )
 
 
@@ -63,9 +63,8 @@ def _build_login_response(user_email: str, full_name: str, role: str, settings: 
 async def register(
     request: Request,
     payload: RegisterRequest,
+    create_access_token_for_user: AccessTokenFactory = Depends(get_access_token_factory),
     use_cases: AuthUseCases = Depends(get_auth_use_cases),
-    db_session: AsyncSession = Depends(get_db_session),
-    settings: Settings = Depends(get_settings),
 ) -> LoginResponse:
     _ = request
     try:
@@ -74,14 +73,17 @@ async def register(
             RegisterRequestDTO(
                 email=str(payload.email),
                 password=payload.password,
-                full_name=payload.full_name,
+                name=payload.name,
+                surname=payload.surname,
                 phone=payload.phone,
                 role=role,
                 city=payload.city,
                 company_name=payload.company_name,
             )
         )
-        return _build_login_response(result.email, result.full_name, result.role, settings)
+        return _build_login_response(
+            result.email, result.name, result.surname, result.role, create_access_token_for_user
+        )
     except EmailAlreadyRegisteredError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     except (DomainError, ValueError) as exc:
@@ -93,21 +95,23 @@ async def register(
 async def login(
     request: Request,
     payload: LoginRequest,
+    create_access_token_for_user: AccessTokenFactory = Depends(get_access_token_factory),
     use_cases: AuthUseCases = Depends(get_auth_use_cases),
-    db_session: AsyncSession = Depends(get_db_session),
-    settings: Settings = Depends(get_settings),
 ) -> LoginResponse:
     _ = request
     result = await use_cases.login(LoginRequestDTO(email=str(payload.email), password=payload.password))
     if result is not None:
-        return _build_login_response(result.email, result.full_name, result.role, settings)
+        return _build_login_response(
+            result.email, result.name, result.surname, result.role, create_access_token_for_user
+        )
 
     # Backward compatibility for existing hardcoded demo users.
-    demo_user = authenticate_user(str(payload.email), payload.password)
+    demo_user = authenticate_demo_credentials(str(payload.email), payload.password)
     if not demo_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    return _build_login_response(demo_user["email"], demo_user["full_name"], demo_user["role"], settings)
+    email, name, surname, role = demo_user
+    return _build_login_response(email, name, surname, role, create_access_token_for_user)
 
 
 @lenient_auth_limiter
@@ -116,8 +120,7 @@ async def forgot_password(
     request: Request,
     payload: ForgotPasswordRequest,
     use_cases: AuthUseCases = Depends(get_auth_use_cases),
-    db_session: AsyncSession = Depends(get_db_session),
-    settings: Settings = Depends(get_settings),
+    is_development: bool = Depends(get_is_development),
 ) -> ForgotPasswordResponse:
     _ = request
     try:
@@ -127,7 +130,7 @@ async def forgot_password(
 
     return ForgotPasswordResponse(
         message="If that email exists, a password reset link has been generated.",
-        reset_token=reset_token if settings.is_development else None,
+        reset_token=reset_token if is_development else None,
     )
 
 
@@ -137,13 +140,10 @@ async def reset_password(
     request: Request,
     payload: ResetPasswordRequest,
     use_cases: AuthUseCases = Depends(get_auth_use_cases),
-    db_session: AsyncSession = Depends(get_db_session),
 ) -> MessageResponse:
     _ = request
     try:
-        await use_cases.reset_password(
-            ResetPasswordRequestDTO(token=payload.token, new_password=payload.new_password)
-        )
+        await use_cases.reset_password(ResetPasswordRequestDTO(token=payload.token, new_password=payload.new_password))
     except InvalidPasswordResetTokenError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except DomainError as exc:
@@ -156,6 +156,7 @@ async def reset_password(
 async def me(current_user: UserProfile = Depends(get_current_user)) -> AuthUserResponse:
     return AuthUserResponse(
         email=current_user.profile_metadata.get("email", "unknown@mano.local"),
-        full_name=current_user.full_name,
+        name=current_user.name,
+        surname=current_user.surname,
         role=str(current_user.role),
     )

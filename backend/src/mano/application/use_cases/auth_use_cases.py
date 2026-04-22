@@ -34,7 +34,8 @@ class AuthUseCases:
         principal = await self.auth_service.register(
             email=request.email,
             password=request.password,
-            full_name=request.full_name,
+            name=request.name,
+            surname=request.surname,
             phone=request.phone,
             role=request.role,
             city=request.city,
@@ -42,7 +43,8 @@ class AuthUseCases:
         )
         return AuthenticatedUserDTO(
             email=principal.email,
-            full_name=principal.user.full_name,
+            name=principal.user.name,
+            surname=principal.user.surname,
             role=str(principal.user.role),
         )
 
@@ -54,7 +56,8 @@ class AuthUseCases:
 
         return AuthenticatedUserDTO(
             email=principal.email,
-            full_name=principal.user.full_name,
+            name=principal.user.name,
+            surname=principal.user.surname,
             role=str(principal.user.role),
         )
 
