@@ -15,10 +15,15 @@ from alembic import context
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # Import our models metadata
+from mano.infrastructure.config.settings import DatabaseSettings
 from mano.infrastructure.database.models import Base
 
 # this is the Alembic Config object
 config = context.config
+
+# Override hardcoded alembic.ini URL with environment-aware settings
+db_settings = DatabaseSettings()
+config.set_main_option("sqlalchemy.url", db_settings.url)
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
