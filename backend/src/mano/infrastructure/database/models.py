@@ -66,7 +66,9 @@ class UserProfileModel(Base):
 
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
     auth_user_id = Column(GUID, unique=True, nullable=False, index=True)
-    full_name = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=False)
+    surname = Column(String(255), nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
     phone = Column(String(20), nullable=False, index=True)
     avatar_url = Column(String(500), nullable=True)
     bio = Column(Text, nullable=True)
@@ -87,9 +89,48 @@ class UserProfileModel(Base):
     availability_slots = relationship("AvailabilityModel", back_populates="provider", cascade="all, delete-orphan")
     moderated_reviews = relationship("ReviewModel", foreign_keys="ReviewModel.moderated_by", back_populates="moderator")
     auth_credentials = relationship("AuthCredentialModel", cascade="all, delete-orphan")
+    messages_sent = relationship("MessageModel", back_populates="sender")
+
+    @property
+    def full_name(self) -> str:
+        parts = [self.name.strip(), self.surname.strip()]
+        return " ".join(part for part in parts if part)
+
+    @full_name.setter
+    def full_name(self, value: str) -> None:
+        normalized = value.strip()
+        if not normalized:
+            self.name = ""
+            self.surname = ""
+            return
+        first_name, separator, remainder = normalized.partition(" ")
+        self.name = first_name
+        self.surname = remainder if separator else ""
 
     def __repr__(self) -> str:
         return f"<UserProfile {self.full_name} - {self.role}>"
+
+
+class ConversationModel(Base):
+    __tablename__ = "conversations"
+
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+
+    messages = relationship("MessageModel", back_populates="conversation", cascade="all, delete-orphan")
+
+
+class MessageModel(Base):
+    __tablename__ = "messages"
+
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    conversation_id = Column(GUID, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    sender_id = Column(GUID, ForeignKey("user_profiles.id"), nullable=False, index=True)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True)
+
+    conversation = relationship("ConversationModel", back_populates="messages")
+    sender = relationship("UserProfileModel", back_populates="messages_sent")
 
 
 class CategoryModel(Base):

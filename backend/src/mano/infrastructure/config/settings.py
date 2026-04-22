@@ -121,7 +121,7 @@ class CloudinarySettings(BaseSettings):
     api_key: str = Field(default="", description="Cloudinary API key")
     api_secret: str = Field(default="", description="Cloudinary API secret")
     secure: bool = Field(default=True, description="Use HTTPS")
-    
+
     def is_configured(self) -> bool:
         """Check if Cloudinary is configured."""
         return bool(self.cloud_name and self.api_key and self.api_secret)
@@ -151,7 +151,7 @@ class Settings(BaseSettings):
     redis: RedisSettings = Field(default_factory=RedisSettings)
     api: APISettings = Field(default_factory=APISettings)
     smtp: SMTPSettings = Field(default_factory=SMTPSettings)
-    cloudinary: CloudinarySettings = Field(default_factory=CloudinarySettings)  
+    cloudinary: CloudinarySettings = Field(default_factory=CloudinarySettings)
 
     @property
     def is_development(self) -> bool:

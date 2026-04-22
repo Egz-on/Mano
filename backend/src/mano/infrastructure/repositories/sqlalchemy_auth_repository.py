@@ -66,7 +66,9 @@ class SQLAlchemyAuthRepository(AuthRepository):
         await self._session.refresh(model)
         return self._credential_to_domain(model)
 
-    async def update_credential_password(self, auth_user_id: UserAuthId, password_hash: str, updated_at: datetime) -> None:
+    async def update_credential_password(
+        self, auth_user_id: UserAuthId, password_hash: str, updated_at: datetime
+    ) -> None:
         stmt = (
             update(AuthCredentialModel)
             .where(AuthCredentialModel.auth_user_id == str(auth_user_id))
@@ -112,6 +114,8 @@ class SQLAlchemyAuthRepository(AuthRepository):
         await self._session.flush()
 
     async def mark_password_reset_token_used(self, token_id: PasswordResetTokenId, used_at: datetime) -> None:
-        stmt = update(PasswordResetTokenModel).where(PasswordResetTokenModel.id == str(token_id)).values(used_at=used_at)
+        stmt = (
+            update(PasswordResetTokenModel).where(PasswordResetTokenModel.id == str(token_id)).values(used_at=used_at)
+        )
         await self._session.execute(stmt)
         await self._session.flush()

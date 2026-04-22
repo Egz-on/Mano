@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Annotated
+from collections.abc import Callable
 from uuid import NAMESPACE_DNS, uuid5
 
 import redis.asyncio as redis
@@ -13,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from mano.application.use_cases.auth_use_cases import AuthUseCases
 from mano.application.use_cases.availability_use_cases import AvailabilityUseCases
 from mano.application.use_cases.category_use_cases import CategoryUseCases
+from mano.application.use_cases.chat_use_cases import ChatUseCases
 from mano.application.use_cases.review_use_cases import ReviewUseCases
 from mano.application.use_cases.service_use_cases import ServiceUseCases
 from mano.application.use_cases.user_use_cases import UserUseCases
@@ -23,6 +25,7 @@ from mano.domain.repositories.image_storage_port import IImageStoragePort
 from mano.domain.services.auth_service import AuthService
 from mano.domain.services.availability_service import AvailabilityService
 from mano.domain.services.category_service import CategoryService
+from mano.domain.services.chat_service import ChatService
 from mano.domain.services.rating_service import RatingService
 from mano.domain.services.review_service import ReviewService
 from mano.domain.services.service_services import ServiceService
@@ -33,7 +36,12 @@ from mano.infrastructure.database.connection import get_db_session
 from mano.infrastructure.external.smtp_email_sender import SMTPEmailSender
 from mano.infrastructure.factories import InfrastructureServiceFactory
 from mano.infrastructure.repositories.cloudinary_storage import CloudinaryStorageAdapter
-from mano.infrastructure.security.local_auth import DEMO_USERS, decode_access_token
+from mano.infrastructure.security.local_auth import (
+    DEMO_USERS,
+    authenticate_user,
+    create_access_token,
+    decode_access_token,
+)
 from mano.infrastructure.security.password_hasher import BcryptPasswordHasher
 from mano.infrastructure.security.rate_limiter import (
     lenient_auth_limiter,
@@ -49,6 +57,9 @@ __all__ = [
     "get_auth_repository",
     "get_auth_service",
     "get_auth_use_cases",
+    "get_access_token_factory",
+    "get_is_development",
+    "authenticate_demo_credentials",
     "get_email_sender",
     "get_user_service",
     "get_service_service",
@@ -56,12 +67,15 @@ __all__ = [
     "get_availability_service",
     "get_review_service",
     "get_rating_service",
+    "get_chat_service",
     "get_user_use_cases",
     "get_service_use_cases",
     "get_category_use_cases",
     "get_availability_use_cases",
     "get_review_use_cases",
+    "get_chat_use_cases",
     "get_current_user",
+    "resolve_user_from_token",
     "setup_rate_limiting",
     "strict_auth_limiter",
     "moderate_auth_limiter",
@@ -69,6 +83,8 @@ __all__ = [
     "get_image_storage",
     "ImageStorageDep",
 ]
+
+AccessTokenFactory = Callable[[str, str, str, str], str]
 
 
 def _derive_auth_user_id(email: str) -> UserAuthId:
@@ -142,12 +158,46 @@ async def get_rating_service(session: AsyncSession = Depends(get_db_session)) ->
     return factory.create_rating_service(review_repository, service_repository)
 
 
+async def get_chat_service(session: AsyncSession = Depends(get_db_session)) -> ChatService:
+    factory = InfrastructureServiceFactory()
+    chat_repository = factory.create_chat_repository(session)
+    return factory.create_chat_service(chat_repository)
+
+
 async def get_auth_use_cases(
     auth_service: AuthService = Depends(get_auth_service),
     email_sender: EmailSenderPort = Depends(get_email_sender),
     settings: Settings = Depends(get_settings),
 ) -> AuthUseCases:
     return AuthUseCases(auth_service, email_sender, settings.frontend_url)
+
+
+def authenticate_demo_credentials(email: str, password: str) -> tuple[str, str, str, str] | None:
+    """Validate local demo credentials and return auth-ready claims."""
+    demo_user = authenticate_user(email, password)
+    if demo_user is None:
+        return None
+    return demo_user["email"], demo_user["name"], demo_user["surname"], demo_user["role"]
+
+
+def get_access_token_factory(settings: Settings = Depends(get_settings)) -> AccessTokenFactory:
+    """Return a helper that issues local access tokens using current settings."""
+
+    def create_token(subject: str, role: str, name: str, surname: str) -> str:
+        return create_access_token(
+            secret_key=settings.secret_key or "dev-secret-change-me",
+            subject=subject,
+            role=role,
+            name=name,
+            surname=surname,
+        )
+
+    return create_token
+
+
+def get_is_development(settings: Settings = Depends(get_settings)) -> bool:
+    """Expose the current development-mode flag to the web layer."""
+    return settings.is_development
 
 
 async def get_user_use_cases(user_service: UserService = Depends(get_user_service)) -> UserUseCases:
@@ -176,17 +226,17 @@ async def get_review_use_cases(
     return ReviewUseCases(review_service, rating_service, user_service)
 
 
-async def get_current_user(
-    authorization: str | None = Header(default=None, convert_underscores=False),
-    settings: Settings = Depends(get_settings),
-    db_session: AsyncSession = Depends(get_db_session),
-    auth_repository: AuthRepository = Depends(get_auth_repository),
-    user_service: UserService = Depends(get_user_service),
-) -> UserProfile:
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing token")
+async def get_chat_use_cases(chat_service: ChatService = Depends(get_chat_service)) -> ChatUseCases:
+    return ChatUseCases(chat_service)
 
-    token = authorization.split(" ", 1)[1]
+
+async def resolve_user_from_token(
+    token: str,
+    *,
+    settings: Settings,
+    auth_repository: AuthRepository,
+    user_service: UserService,
+) -> UserProfile:
     try:
         token_info = decode_access_token(token, secret_key=settings.secret_key or "dev-secret-change-me")
     except ValueError as exc:
@@ -195,17 +245,19 @@ async def get_current_user(
     email = token_info["sub"].strip().lower()
     credential = await auth_repository.get_credential_by_email(email)
     demo_user = DEMO_USERS.get(email)
-    auth_user_id = (
-        credential.auth_user_id
-        if credential
-        else UserAuthId(demo_user["auth_user_id"]) if demo_user else _derive_auth_user_id(email)
-    )
+    if credential:
+        auth_user_id = credential.auth_user_id
+    elif demo_user:
+        auth_user_id = UserAuthId(demo_user["auth_user_id"])
+    else:
+        auth_user_id = _derive_auth_user_id(email)
 
     existing = await user_service.find_user_by_auth_user_id(auth_user_id)
     if existing:
         return existing
 
-    full_name = demo_user["full_name"] if demo_user else token_info.get("full_name", "User")
+    name = demo_user["name"] if demo_user else token_info.get("name", "User")
+    surname = demo_user["surname"] if demo_user else token_info.get("surname", "")
     role = UserRole(demo_user["role"] if demo_user else token_info.get("role", UserRole.client))
     raw_phone = demo_user["phone"] if demo_user else "+38970000000"
     city = demo_user["city"] if demo_user else None
@@ -219,18 +271,41 @@ async def get_current_user(
     new_user = UserProfile(
         id=UserId(),
         auth_user_id=auth_user_id,
-        full_name=full_name,
+        name=name,
+        surname=surname,
         phone=str(phone_vo),
         role=role,
         city=city,
-        company_name=f"{full_name} Services" if role == UserRole.provider else None,
+        company_name=(
+            " ".join(part for part in [name, surname, "Services"] if part) if role == UserRole.provider else None
+        ),
         profile_metadata={"email": email},
         created_at=now,
         updated_at=now,
         last_login=now,
     )
-    created = await user_service.create_user_profile(new_user)
-    return created
+    return await user_service.create_user_profile(new_user)
+
+
+async def get_current_user(
+    authorization: str | None = Header(default=None, convert_underscores=False),
+    settings: Settings = Depends(get_settings),
+    db_session: AsyncSession = Depends(get_db_session),
+) -> UserProfile:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing token")
+
+    token = authorization.split(" ", 1)[1]
+    factory = InfrastructureServiceFactory()
+    auth_repository = factory.create_auth_repository(db_session)
+    user_repository = factory.create_user_repository(db_session)
+    user_service = factory.create_user_service(user_repository, cache=None)
+    return await resolve_user_from_token(
+        token,
+        settings=settings,
+        auth_repository=auth_repository,
+        user_service=user_service,
+    )
 
 
 def get_image_storage() -> IImageStoragePort:

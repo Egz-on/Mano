@@ -25,7 +25,8 @@ class SQLAlchemyUserRepository(UserRepository):
         return UserProfile(
             id=UserId(str(model.id)),
             auth_user_id=UserAuthId(str(model.auth_user_id)),
-            full_name=cast(str, model.full_name),
+            name=cast(str, model.name),
+            surname=cast(str, model.surname),
             phone=cast(str, model.phone),
             avatar_url=cast(str | None, model.avatar_url),
             bio=cast(str | None, model.bio),
@@ -43,7 +44,8 @@ class SQLAlchemyUserRepository(UserRepository):
     @staticmethod
     def _apply_domain_to_model(domain: UserProfile, model: UserProfileModel) -> None:
         model.auth_user_id = uuid_to_str(domain.auth_user_id)
-        model.full_name = domain.full_name
+        model.name = domain.name
+        model.surname = domain.surname
         model.phone = domain.phone
         model.avatar_url = domain.avatar_url
         model.bio = domain.bio
@@ -60,7 +62,8 @@ class SQLAlchemyUserRepository(UserRepository):
         model = UserProfileModel(
             id=uuid_to_str(user.id),
             auth_user_id=uuid_to_str(user.auth_user_id),
-            full_name=user.full_name,
+            name=user.name,
+            surname=user.surname,
             phone=user.phone,
             avatar_url=user.avatar_url,
             bio=user.bio,

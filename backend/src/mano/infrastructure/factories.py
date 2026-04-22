@@ -7,12 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from mano.domain.repositories.auth_repository import AuthRepository
 from mano.domain.repositories.availability_repository import AvailabilityRepository
 from mano.domain.repositories.category_repository import CategoryRepository
+from mano.domain.repositories.chat_repository import ChatRepository
 from mano.domain.repositories.image_storage_port import IImageStoragePort
 from mano.domain.repositories.review_repository import ReviewRepository
 from mano.domain.repositories.service_repository import ServiceRepository
 from mano.domain.repositories.user_repository import UserRepository
 from mano.domain.services.availability_service import AvailabilityService
 from mano.domain.services.category_service import CategoryService
+from mano.domain.services.chat_service import ChatService
 from mano.domain.services.rating_service import RatingService
 from mano.domain.services.review_service import ReviewService
 from mano.domain.services.service_services import ServiceService
@@ -20,6 +22,7 @@ from mano.domain.services.user_service import UserService
 from mano.infrastructure.repositories.sqlalchemy_auth_repository import SQLAlchemyAuthRepository
 from mano.infrastructure.repositories.sqlalchemy_availability_repository import SQLAlchemyAvailabilityRepository
 from mano.infrastructure.repositories.sqlalchemy_category_repository import SQLAlchemyCategoryRepository
+from mano.infrastructure.repositories.sqlalchemy_chat_repository import SQLAlchemyChatRepository
 from mano.infrastructure.repositories.sqlalchemy_review_repository import SQLAlchemyReviewRepository
 from mano.infrastructure.repositories.sqlalchemy_service_repository import SQLAlchemyServiceRepository
 from mano.infrastructure.repositories.sqlalchemy_user_repository import SQLAlchemyUserRepository
@@ -53,6 +56,10 @@ class InfrastructureServiceFactory:
         return SQLAlchemyAvailabilityRepository(session)
 
     @staticmethod
+    def create_chat_repository(session: AsyncSession) -> ChatRepository:
+        return SQLAlchemyChatRepository(session)
+
+    @staticmethod
     def create_user_service(user_repository: UserRepository, cache: object | None = None) -> UserService:
         return UserService(user_repository, cache=cache)
 
@@ -81,3 +88,7 @@ class InfrastructureServiceFactory:
         service_repository: ServiceRepository,
     ) -> RatingService:
         return RatingService(review_repository, service_repository)
+
+    @staticmethod
+    def create_chat_service(chat_repository: ChatRepository) -> ChatService:
+        return ChatService(chat_repository)
