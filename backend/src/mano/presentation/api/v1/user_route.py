@@ -7,7 +7,7 @@ from mano.presentation.schemas.user_schemas import (
     UserProfileUpdateRequest,
 )
 from mano.application.use_cases.user_use_cases import UserUseCases
-from mano.application.dtos.user_dtos import UpdateUserRequest
+from mano.application.dtos.user_dtos import UpdateUserRequest, UserResponse
 from mano.domain.exceptions.base import UserNotFoundError, DomainError
 from mano.utils.pagination import Pagination, PaginationParams, PaginatedResponse
 from mano.dependencies import strict_auth_limiter
@@ -17,7 +17,7 @@ from uuid import UUID
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-def _to_profile_response(user: UserProfile | object) -> UserProfileResponse:
+def _to_profile_response(user: UserProfile | UserResponse) -> UserProfileResponse:
     return UserProfileResponse(
         id=UUID(getattr(user.id, "value", str(user.id))),
         auth_user_id=UUID(getattr(user.auth_user_id, "value", str(user.auth_user_id))),
