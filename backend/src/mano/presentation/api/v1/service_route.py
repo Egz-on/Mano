@@ -164,13 +164,13 @@ async def list_services(
     """List services with pagination."""
     try:
         coordinates_supplied = any(value is not None for value in (latitude, longitude, radius_km))
-        if coordinates_supplied and None in (latitude, longitude, radius_km):
+        if coordinates_supplied and (latitude is None or longitude is None or radius_km is None):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="latitude, longitude, and radius_km must be provided together",
             )
 
-        if coordinates_supplied:
+        if latitude is not None and longitude is not None and radius_km is not None:
             services_dtos = await use_case.list_services_nearby(
                 latitude=latitude,
                 longitude=longitude,
