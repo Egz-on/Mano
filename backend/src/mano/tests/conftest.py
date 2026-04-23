@@ -18,6 +18,7 @@ from mano.infrastructure.cache.connection import get_redis_client
 from mano.infrastructure.config.settings import get_settings
 from mano.infrastructure.security.local_auth import create_access_token
 
+
 class FakeRedis:
     async def get(self, key: str) -> str | None:
         return None

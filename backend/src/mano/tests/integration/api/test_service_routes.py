@@ -146,9 +146,7 @@ async def test_list_services_with_location_filter(
         pricing_type="fixed",
     )
 
-    response = await async_client.get(
-        "/api/v1/services/?latitude=41.9981&longitude=21.4254&radius_km=10"
-    )
+    response = await async_client.get("/api/v1/services/?latitude=41.9981&longitude=21.4254&radius_km=10")
     assert response.status_code == 200
     data = response.json()
     titles = [item["title"] for item in data["items"]]
