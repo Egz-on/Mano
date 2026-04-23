@@ -136,6 +136,8 @@ class ConversationModel(Base):
 
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    job_id = Column(GUID, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=True, unique=True, index=True)
+    job = relationship("JobModel", back_populates="conversation")
 
     messages = relationship("MessageModel", back_populates="conversation", cascade="all, delete-orphan")
 
@@ -210,10 +212,9 @@ class ReviewModel(Base):
     client_id = Column(GUID, ForeignKey("user_profiles.id"), nullable=False, index=True)
     provider_id = Column(GUID, ForeignKey("user_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     service_id = Column(GUID, ForeignKey("services.id", ondelete="CASCADE"), nullable=False, index=True)
+    job_id = Column(GUID, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=True, index=True)
     rating = Column(Integer, nullable=False)
     comment = Column(Text, nullable=True)
-    guest_name = Column(String(255), nullable=True)
-    guest_email = Column(String(255), nullable=True, index=True)
     images = Column(JSON, nullable=True)
     status = Column(String(20), nullable=False, default="pending", index=True)
     moderated_by = Column(GUID, ForeignKey("user_profiles.id"), nullable=True, index=True)
@@ -230,7 +231,7 @@ class ReviewModel(Base):
     __table_args__ = (
         CheckConstraint("rating >= 1 AND rating <= 5", name="chk_rating_range"),
         CheckConstraint("status IN ('pending', 'approved', 'rejected')", name="chk_status_values"),
-        UniqueConstraint("client_id", "service_id", name="uq_one_review_per_service"),
+        UniqueConstraint("client_id", "job_id", name="uq_one_review_per_job"),
     )
 
 
@@ -287,3 +288,46 @@ class PasswordResetTokenModel(Base):
     expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
     used_at = Column(DateTime(timezone=True), nullable=True, index=True)
+
+
+class JobModel(Base):
+    __tablename__ = "jobs"
+
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    customer_id = Column(GUID, ForeignKey("user_profiles.id"), nullable=False, index=True)
+    technician_id = Column(GUID, ForeignKey("user_profiles.id"), nullable=True, index=True)
+    category_id = Column(GUID, ForeignKey("categories.id"), nullable=False, index=True)
+
+    description = Column(Text, nullable=False)
+    photo_urls = Column(JSON, nullable=True)
+    location = Column(LOCATION_TYPE, nullable=False)
+    address = Column(String(500), nullable=False)  # ← display only
+
+    status = Column(String(30), nullable=False, default="pending", index=True)
+    call_out_fee_paid = Column(Boolean, default=False, nullable=False)
+    chat_unlocked = Column(Boolean, default=False, nullable=False)
+
+    quote_amount = Column(String(20), nullable=True)  # ← String not Float
+    quote_description = Column(Text, nullable=True)
+    quote_submitted_at = Column(DateTime(timezone=True), nullable=True)
+    quote_approved_at = Column(DateTime(timezone=True), nullable=True)
+    quote_rejected_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+
+    customer = relationship("UserProfileModel", foreign_keys=[customer_id])
+    technician = relationship("UserProfileModel", foreign_keys=[technician_id])
+    category = relationship("CategoryModel")
+    conversation = relationship("ConversationModel", back_populates="job", uselist=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ("
+            "'pending','assigned','en_route','arrived',"
+            "'diagnosed','quote_approved','quote_rejected',"
+            "'in_progress','completed','cancelled'"
+            ")",
+            name="chk_job_status",
+        ),
+    )
