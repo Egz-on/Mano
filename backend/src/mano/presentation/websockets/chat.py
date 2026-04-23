@@ -7,6 +7,7 @@ import json
 import logging
 
 from fastapi import WebSocket
+import redis.asyncio as aioredis
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +52,8 @@ class RedisChatBridge:
 
     def __init__(self, manager: ChatConnectionManager) -> None:
         self._manager = manager
-        self._redis_client: object | None = None
-        self._pubsub: object | None = None
+        self._redis_client: aioredis.Redis | None = None
+        self._pubsub: aioredis.client.PubSub | None = None
         self._listener_task: asyncio.Task[None] | None = None
         self._active = False
         self._rooms: dict[str, int] = {}
@@ -62,8 +63,8 @@ class RedisChatBridge:
     def is_active(self) -> bool:
         return self._active
 
-    async def start(self, redis_client: object | None) -> None:
-        if redis_client is None or not hasattr(redis_client, "pubsub") or not hasattr(redis_client, "publish"):
+    async def start(self, redis_client: aioredis.Redis | None) -> None:
+        if redis_client is None:
             self._active = False
             return
         if self._listener_task is not None:
@@ -113,9 +114,7 @@ class RedisChatBridge:
                 should_unsubscribe = False
 
         if should_unsubscribe and self._active and self._pubsub is not None:
-            unsubscribe = getattr(self._pubsub, "unsubscribe", None)
-            if callable(unsubscribe):
-                await unsubscribe(f"chat:{conversation_id}")
+            await self._pubsub.unsubscribe(f"chat:{conversation_id}")
 
     async def fanout(self, conversation_id: str, payload: dict[str, object]) -> None:
         if self._active and self._redis_client is not None:
@@ -159,9 +158,7 @@ class RedisChatBridge:
     async def _subscribe_rooms(self, rooms: list[str]) -> None:
         if not rooms or self._pubsub is None:
             return
-        subscribe = getattr(self._pubsub, "subscribe", None)
-        if callable(subscribe):
-            await subscribe(*[f"chat:{room}" for room in rooms])
+        await self._pubsub.subscribe(*[f"chat:{room}" for room in rooms])
 
 
 chat_connection_manager = ChatConnectionManager()
