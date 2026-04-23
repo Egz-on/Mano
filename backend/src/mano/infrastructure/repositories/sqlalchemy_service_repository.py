@@ -30,10 +30,7 @@ class SQLAlchemyServiceRepository(ServiceRepository):
         latitude_a_rad = radians(latitude_a)
         latitude_b_rad = radians(latitude_b)
 
-        haversine = (
-            sin(delta_lat / 2) ** 2
-            + cos(latitude_a_rad) * cos(latitude_b_rad) * sin(delta_lon / 2) ** 2
-        )
+        haversine = sin(delta_lat / 2) ** 2 + cos(latitude_a_rad) * cos(latitude_b_rad) * sin(delta_lon / 2) ** 2
         return 2 * earth_radius_km * asin(sqrt(haversine))
 
     # =====================
