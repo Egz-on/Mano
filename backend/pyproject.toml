@@ -63,7 +63,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.pyright]
-pythonPath = "python"
+pythonPath = ".venv/bin/python"
 extraPaths = ["src/mano"]
 
 [tool.mypy]
