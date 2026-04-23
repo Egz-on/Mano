@@ -41,13 +41,9 @@ def upgrade() -> None:
         WHERE longitude IS NOT NULL AND latitude IS NOT NULL
         """
     )
-    op.create_index(
-        "idx_user_profiles_location",
-        "user_profiles",
-        ["location"],
-        unique=False,
-        postgresql_using="gist",
-    )
+    # GeoAlchemy2 creates the GiST spatial index for Geometry columns using the
+    # conventional "idx_<table>_<column>" name, so creating it manually here
+    # collides with the auto-generated relation during the same migration.
     op.drop_column("user_profiles", "latitude")
     op.drop_column("user_profiles", "longitude")
 
@@ -71,5 +67,4 @@ def downgrade() -> None:
         WHERE location IS NOT NULL
         """
     )
-    op.drop_index("idx_user_profiles_location", table_name="user_profiles", postgresql_using="gist")
     op.drop_column("user_profiles", "location")
