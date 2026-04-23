@@ -261,10 +261,10 @@ That is the key decision that keeps this stack professional over time.
 
 ## Source References
 
-- FastAPI OpenAPI docs: https://fastapi.tiangolo.com/reference/openapi/docs/
-- FastAPI release notes: https://fastapi.tiangolo.com/release-notes/
-- SQLAlchemy asyncio docs: https://docs.sqlalchemy.org/20/orm/extensions/asyncio.html
-- PostGIS `ST_DWithin`: https://postgis.net/docs/ST_DWithin.html
-- Redis Pub/Sub docs: https://redis.io/docs/latest/develop/pubsub/
-- Celery docs: https://docs.celeryq.dev/en/stable/
-- Celery brokers overview: https://docs.celeryq.dev/en/main/getting-started/backends-and-brokers/index.html
+- FastAPI OpenAPI docs: <https://fastapi.tiangolo.com/reference/openapi/docs/>
+- FastAPI release notes: <https://fastapi.tiangolo.com/release-notes/>
+- SQLAlchemy asyncio docs: <https://docs.sqlalchemy.org/20/orm/extensions/asyncio.html>
+- PostGIS `ST_DWithin`: <https://postgis.net/docs/ST_DWithin.html>
+- Redis Pub/Sub docs: <https://redis.io/docs/latest/develop/pubsub/>
+- Celery docs: <https://docs.celeryq.dev/en/stable/>
+- Celery brokers overview: <https://docs.celeryq.dev/en/main/getting-started/backends-and-brokers/index.html>

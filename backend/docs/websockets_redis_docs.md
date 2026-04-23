@@ -2,13 +2,13 @@
 
 ## Table of Contents
 
-1. [Architecture Overview](#architecture-overview)  
-2. [WebSocket Layer](#websocket-layer)  
-3. [Redis Pub/Sub Bridge](#redis-pubsub-bridge)  
-4. [Redis Caching Layer](#redis-caching-layer)  
-5. [Configuration & Infrastructure](#configuration--infrastructure)  
-6. [Message Flow (End-to-End)](#message-flow-end-to-end)  
-7. [File Reference](#file-reference)  
+1. [Architecture Overview](#architecture-overview)
+2. [WebSocket Layer](#websocket-layer)
+3. [Redis Pub/Sub Bridge](#redis-pubsub-bridge)
+4. [Redis Caching Layer](#redis-caching-layer)
+5. [Configuration & Infrastructure](#configuration--infrastructure)
+6. [Message Flow (End-to-End)](#message-flow-end-to-end)
+7. [File Reference](#file-reference)
 
 ---
 
@@ -324,6 +324,7 @@ A FastAPI dependency `get_redis_client()` wraps the singleton for use in route h
 | `REDIS_PASSWORD` | `None` | Redis auth password (optional) |
 
 Generated URL format:
+
 ```
 redis://[:password@]host:port/db
 ```
@@ -393,7 +394,7 @@ Client A (Instance 1) sends {"content": "Hello"}
     → WS Endpoint validates & persists to DB
     → RedisChatBridge.fanout(room, payload)
         → PUBLISH chat:room-123  {"type":"message","message":{...},"conversation_id":"room-123"}
-    
+
 Instance 1 _listen() receives message:
     → strips conversation_id
     → ChatConnectionManager.broadcast(room, payload)
