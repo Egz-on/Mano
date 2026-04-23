@@ -46,7 +46,7 @@ class Message:
         conversation_id: ConversationId,
         sender_id: UserId,
         content: str,
-    ) -> "Message":
+    ) -> Message:
         return cls(
             id=MessageId(),
             conversation_id=conversation_id,

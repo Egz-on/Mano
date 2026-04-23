@@ -25,5 +25,5 @@ class Conversation:
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @classmethod
-    def create(cls) -> "Conversation":
+    def create(cls) -> Conversation:
         return cls(id=ConversationId(), created_at=datetime.now(UTC))
