@@ -43,3 +43,11 @@ class EmailDeliveryError(DomainError):
 
 class PermissionError(DomainError):
     """Permission denied exception."""
+
+
+class JobNotFoundError(DomainError):
+    """Job not found exception."""
+
+
+class JobStateError(DomainError):
+    """Invalid job lifecycle operation."""
