@@ -6,7 +6,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from mano.application.dtos.job_dtos import AssignTechnicianRequest, CreateJobRequest, SubmitQuoteRequest, UpdateJobRequest
+from mano.application.dtos.job_dtos import (
+    AssignTechnicianRequest,
+    CreateJobRequest,
+    SubmitQuoteRequest,
+    UpdateJobRequest,
+)
 from mano.application.use_cases.job_use_cases import JobUseCases
 from mano.dependencies import get_current_user, get_job_use_cases
 from mano.domain.exceptions.base import DomainError, JobNotFoundError, JobStateError
@@ -27,24 +32,29 @@ router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
 def _to_response(job: Job) -> JobResponseSchema:
+    """Convert a Job domain entity to a response schema."""
     return JobResponseSchema.model_validate(job.to_dict())
 
 
 def _is_job_customer(current_user: UserProfile, job: Job) -> bool:
+    """Check if the current user is the job's customer."""
     return str(current_user.id) == str(job.customer_id)
 
 
 def _is_job_technician(current_user: UserProfile, job: Job) -> bool:
+    """Check if the current user is the job's assigned technician."""
     return job.technician_id is not None and str(current_user.id) == str(job.technician_id)
 
 
 def _ensure_can_view_job(current_user: UserProfile, job: Job) -> None:
+    """Raise 403 if the user cannot view the job."""
     if current_user.is_admin() or _is_job_customer(current_user, job) or _is_job_technician(current_user, job):
         return
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this job")
 
 
 def _ensure_can_create_job(current_user: UserProfile, customer_id: UserId) -> None:
+    """Raise 403 if the user cannot create a job for the given customer."""
     if current_user.is_admin():
         return
     if not current_user.is_client():
@@ -54,18 +64,21 @@ def _ensure_can_create_job(current_user: UserProfile, customer_id: UserId) -> No
 
 
 def _ensure_can_manage_job(current_user: UserProfile, job: Job) -> None:
+    """Raise 403 if the user cannot manage (update/delete) the job."""
     if current_user.is_admin() or _is_job_customer(current_user, job):
         return
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the customer can manage this job")
 
 
 def _ensure_can_submit_quote(current_user: UserProfile, job: Job) -> None:
+    """Raise 403 if the user cannot submit a quote for the job."""
     if current_user.is_admin() or _is_job_technician(current_user, job):
         return
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the assigned technician can submit a quote")
 
 
 def _ensure_can_change_status(current_user: UserProfile, job: Job, target_status: str) -> None:
+    """Raise 403 if the user cannot transition the job to the target status."""
     if current_user.is_admin():
         return
 
@@ -86,6 +99,7 @@ async def create_job(
     current_user: UserProfile = Depends(get_current_user),
     use_cases: JobUseCases = Depends(get_job_use_cases),
 ) -> JobResponseSchema:
+    """Create a new job."""
     customer_id = UserId(str(payload.customer_id))
     _ensure_can_create_job(current_user, customer_id)
 
@@ -111,6 +125,7 @@ async def get_job(
     current_user: UserProfile = Depends(get_current_user),
     use_cases: JobUseCases = Depends(get_job_use_cases),
 ) -> JobResponseSchema:
+    """Retrieve a job by ID."""
     try:
         job = await use_cases.get_job_by_id(str(job_id))
         _ensure_can_view_job(current_user, job)
@@ -128,6 +143,7 @@ async def list_jobs(
     current_user: UserProfile = Depends(get_current_user),
     use_cases: JobUseCases = Depends(get_job_use_cases),
 ) -> PaginatedResponse[JobResponseSchema]:
+    """List jobs with optional filters and role-based scoping."""
     scoped_customer_id = str(customer_id) if customer_id else None
     scoped_technician_id = str(technician_id) if technician_id else None
 
@@ -139,7 +155,9 @@ async def list_jobs(
         elif current_user.is_provider():
             scoped_technician_id = str(current_user.id)
             if technician_id and scoped_technician_id != str(technician_id):
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot view another technician's jobs")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Cannot view another technician's jobs"
+                )
         else:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unsupported role for job listing")
 
@@ -184,6 +202,7 @@ async def update_job(
     current_user: UserProfile = Depends(get_current_user),
     use_cases: JobUseCases = Depends(get_job_use_cases),
 ) -> JobResponseSchema:
+    """Update an existing job's details."""
     try:
         existing_job = await use_cases.get_job_by_id(str(job_id))
         _ensure_can_manage_job(current_user, existing_job)
@@ -211,6 +230,7 @@ async def delete_job(
     current_user: UserProfile = Depends(get_current_user),
     use_cases: JobUseCases = Depends(get_job_use_cases),
 ) -> None:
+    """Delete a job by ID."""
     try:
         existing_job = await use_cases.get_job_by_id(str(job_id))
         _ensure_can_manage_job(current_user, existing_job)
@@ -226,6 +246,7 @@ async def assign_technician(
     current_user: UserProfile = Depends(get_current_user),
     use_cases: JobUseCases = Depends(get_job_use_cases),
 ) -> JobResponseSchema:
+    """Assign a technician to a pending job."""
     try:
         existing_job = await use_cases.get_job_by_id(str(job_id))
         _ensure_can_manage_job(current_user, existing_job)
@@ -247,6 +268,7 @@ async def submit_quote(
     current_user: UserProfile = Depends(get_current_user),
     use_cases: JobUseCases = Depends(get_job_use_cases),
 ) -> JobResponseSchema:
+    """Submit a quote for a diagnosed job."""
     try:
         existing_job = await use_cases.get_job_by_id(str(job_id))
         _ensure_can_submit_quote(current_user, existing_job)
@@ -267,6 +289,7 @@ async def approve_quote(
     current_user: UserProfile = Depends(get_current_user),
     use_cases: JobUseCases = Depends(get_job_use_cases),
 ) -> JobResponseSchema:
+    """Approve the submitted quote for a job."""
     try:
         existing_job = await use_cases.get_job_by_id(str(job_id))
         _ensure_can_manage_job(current_user, existing_job)
@@ -284,6 +307,7 @@ async def reject_quote(
     current_user: UserProfile = Depends(get_current_user),
     use_cases: JobUseCases = Depends(get_job_use_cases),
 ) -> JobResponseSchema:
+    """Reject the submitted quote for a job."""
     try:
         existing_job = await use_cases.get_job_by_id(str(job_id))
         _ensure_can_manage_job(current_user, existing_job)
@@ -302,6 +326,7 @@ async def change_job_status(
     current_user: UserProfile = Depends(get_current_user),
     use_cases: JobUseCases = Depends(get_job_use_cases),
 ) -> JobResponseSchema:
+    """Transition a job to a new lifecycle status."""
     try:
         existing_job = await use_cases.get_job_by_id(str(job_id))
         _ensure_can_change_status(current_user, existing_job, payload.status)
