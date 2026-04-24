@@ -13,7 +13,6 @@ from alembic import op
 import sqlalchemy as sa
 from mano.infrastructure.database.models import GUID
 
-
 # revision identifiers, used by Alembic.
 revision: str = "c7d4a9b1e2f3"
 down_revision: str | Sequence[str] | None = "36bfd954b68a"
@@ -66,7 +65,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("token_hash"),
     )
-    op.create_index(op.f("ix_password_reset_tokens_auth_user_id"), "password_reset_tokens", ["auth_user_id"], unique=False)
+    op.create_index(
+        op.f("ix_password_reset_tokens_auth_user_id"), "password_reset_tokens", ["auth_user_id"], unique=False
+    )
     op.create_index(op.f("ix_password_reset_tokens_expires_at"), "password_reset_tokens", ["expires_at"], unique=False)
     op.create_index(op.f("ix_password_reset_tokens_token_hash"), "password_reset_tokens", ["token_hash"], unique=True)
     op.create_index(op.f("ix_password_reset_tokens_used_at"), "password_reset_tokens", ["used_at"], unique=False)

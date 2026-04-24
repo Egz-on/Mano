@@ -136,11 +136,7 @@ def _include_object(object, name, type_, reflected, compare_to):
     if reflected and compare_to is None:
         if schema_name in _POSTGIS_EXTENSION_SCHEMAS or table_name in _POSTGIS_EXTENSION_TABLES:
             return False
-    if (
-        type_ == "unique_constraint"
-        and reflected
-        and compare_to is None
-    ):
+    if type_ == "unique_constraint" and reflected and compare_to is None:
         if table_name in _CONSTRAINT_DRIFT_TABLES:
             return False
     return True
