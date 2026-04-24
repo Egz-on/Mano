@@ -20,7 +20,8 @@
 
 - 🔐 **Authentication & Authorization**: Secure JWT-based auth with distinct client, provider, and admin roles.
 - 🏪 **Service & Category Management**: Hierarchical categories and rich service listings for providers.
-- 📍 **Geospatial Job Workflows**: Location-aware job creation, technician assignment, quoting, and lifecycle tracking using PostGIS.
+- 📍 **Geospatial Job Workflows**: Location-aware job creation, technician assignment, quoting,
+  and lifecycle tracking using PostGIS.
 - 💬 **Real-time Chat**: WebSocket-powered live messaging between customers and technicians backed by Redis.
 - 📅 **Provider Availability**: Flexible scheduling system for technicians to manage their time.
 - ⭐ **Reviews & Moderation**: Integrated rating systems with administrative moderation capabilities.

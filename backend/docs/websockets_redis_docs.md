@@ -14,7 +14,9 @@
 
 ## Architecture Overview
 
-The Mano backend implements a **real-time chat system** using FastAPI WebSockets with an optional **Redis Pub/Sub fanout bridge** for horizontal scaling. Redis also serves as a **general-purpose cache** via a clean domain interface.
+The Mano backend implements a **real-time chat system** using FastAPI WebSockets with an optional
+**Redis Pub/Sub fanout bridge** for horizontal scaling. Redis also serves as a **general-purpose
+cache** via a clean domain interface.
 
 ```mermaid
 graph TD
@@ -54,11 +56,11 @@ graph TD
 ### Design Decisions
 
 | Decision | Rationale |
-|---|---|
-| **Redis fanout is optional** | The bridge gracefully degrades — if Redis is unavailable, messages are broadcast locally only. This makes development and testing simpler. |
+| --- | --- |
+| **Redis fanout is optional** | The bridge gracefully degrades — if Redis is unavailable, messages are broadcast locally only. |
 | **Singleton Redis client** | A single `RedisClient` class manages the connection pool, reused by both caching and Pub/Sub. |
-| **Token via query param** | WebSockets don't support standard `Authorization` headers, so the JWT is passed as `?token=` on the connection URL. |
-| **Room-scoped Redis subscriptions** | Each FastAPI instance subscribes only to conversation channels that currently have local websocket listeners. This avoids global `chat:*` fanout overhead. |
+| **Token via query param** | WebSockets don't support standard `Authorization` headers, so the JWT is passed as `?token=`. |
+| **Room-scoped Redis subscriptions** | Each FastAPI instance subscribes only to channels with local websocket listeners. |
 
 ---
 
@@ -71,10 +73,10 @@ graph TD
 An in-memory registry that tracks active WebSocket connections grouped by `conversation_id` (room). All operations are protected by an `asyncio.Lock` for thread safety.
 
 | Method | Signature | Description |
-|---|---|---|
+| --- | --- | --- |
 | `connect` | `(conversation_id, websocket) → None` | Accepts the WebSocket handshake and registers it in the room map. |
 | `disconnect` | `(conversation_id, websocket) → None` | Removes a socket from its room; cleans up the room key if empty. |
-| `broadcast` | `(conversation_id, payload) → None` | Sends a JSON payload to **all** connections in a room. Stale connections that throw on send are automatically cleaned up. |
+| `broadcast` | `(conversation_id, payload) → None` | Sends a JSON payload to **all** connections in a room. |
 
 ```python
 # Internal state
@@ -83,7 +85,8 @@ _lock: asyncio.Lock
 ```
 
 > [!NOTE]
-> `broadcast` acquires the lock only to **snapshot** the recipient list, then releases it before sending. This avoids holding the lock during I/O.
+> `broadcast` acquires the lock only to **snapshot** the recipient list, then releases it
+> before sending. This avoids holding the lock during I/O.
 
 ### WebSocket Endpoint
 
@@ -149,7 +152,7 @@ sequenceDiagram
 #### Inbound Message Handling
 
 | Step | Action |
-|---|---|
+| --- | --- |
 | 1 | Receive JSON payload via `websocket.receive_json()` |
 | 2 | Validate `content` field is a non-empty string |
 | 3 | Create message through `ChatService.create_message()` |
@@ -200,7 +203,9 @@ sequenceDiagram
 
 **File:** [chat.py](file:///home/egz-user/mano/backend/src/mano/presentation/websockets/chat.py#L49-L131)
 
-An optional layer that uses Redis Pub/Sub to distribute WebSocket messages across **multiple FastAPI instances**. Without it, each process can only broadcast to its own local connections.
+An optional layer that uses Redis Pub/Sub to distribute WebSocket messages across
+**multiple FastAPI instances**. Without it, each process can only broadcast to its own local
+connections.
 
 #### Channel Naming
 
@@ -236,7 +241,7 @@ stateDiagram-v2
 ```
 
 | Method | Description |
-|---|---|
+| --- | --- |
 | `start(redis_client)` | Initializes Pub/Sub and spawns `_listen()` as a background task. Existing active rooms are subscribed if Redis is available. |
 | `stop()` | Cancels the listener task, closes the Pub/Sub subscription. |
 | `fanout(conversation_id, payload)` | If active: publishes to `chat:{conversation_id}`. If inactive: falls back to local `ChatConnectionManager.broadcast()`. |
@@ -257,7 +262,8 @@ async def fanout(self, conversation_id, payload):
 ```
 
 > [!IMPORTANT]
-> The bridge **never raises** on Redis failure. If `publish` fails, it silently falls back to local delivery and logs a warning.
+> The bridge **never raises** on Redis failure. If `publish` fails,
+> it silently falls back to local delivery and logs a warning.
 
 ---
 
@@ -270,7 +276,7 @@ async def fanout(self, conversation_id, payload):
 Abstract base class defining the caching contract. This keeps the domain layer independent of Redis.
 
 | Method | Signature | Description |
-|---|---|---|
+| --- | --- | --- |
 | `get` | `(key) → Any \| None` | Retrieve a cached value |
 | `set` | `(key, value, ttl?) → None` | Store a value with optional TTL (seconds) |
 | `delete` | `(key) → None` | Remove a cached entry |
@@ -286,14 +292,16 @@ Implements `CacheInterface` using `redis.asyncio`. Key behaviors:
 
 - **Serialization:** `dict`/`list` values → JSON; everything else → `str()`
 - **Deserialization:** Attempts `json.loads()`, falls back to raw string
-- **Graceful degradation:** Every method catches all exceptions and returns safe defaults (`None`, `False`, no-op). Redis being down never crashes the application.
+- **Graceful degradation:** Every method catches all exceptions and
+  returns safe defaults (`None`, `False`, no-op). Redis being down
+  never crashes the application.
 
 ### RedisClient Singleton
 
 **File:** [connection.py](file:///home/egz-user/mano/backend/src/mano/infrastructure/cache/connection.py)
 
 | Method | Description |
-|---|---|
+| --- | --- |
 | `get_client()` | Lazily creates an `aioredis.Redis` instance from the configured URL. Returns the cached instance on subsequent calls. |
 | `close()` | Gracefully closes the connection and resets the singleton. |
 
@@ -317,7 +325,7 @@ A FastAPI dependency `get_redis_client()` wraps the singleton for use in route h
 **File:** [settings.py](file:///home/egz-user/mano/backend/src/mano/infrastructure/config/settings.py#L41-L62)
 
 | Env Variable | Default | Description |
-|---|---|---|
+| --- | --- | --- |
 | `REDIS_HOST` | `localhost` | Redis server hostname |
 | `REDIS_PORT` | `6379` | Redis server port |
 | `REDIS_DB` | `0` | Redis database number |
@@ -348,7 +356,9 @@ redis:
     retries: 5
 ```
 
-The `app` service depends on `redis` with `condition: service_healthy`, ensuring Redis is ready before the FastAPI application starts.
+The `app` service depends on `redis` with
+`condition: service_healthy`, ensuring Redis is ready before the
+FastAPI application starts.
 
 ### Application Lifespan
 
@@ -371,7 +381,9 @@ graph LR
 ```
 
 > [!TIP]
-> If Redis is unavailable at startup, the lifespan handler catches the exception, logs a warning, and the app continues running with local-only WebSocket delivery and no caching.
+> If Redis is unavailable at startup, the lifespan handler catches
+> the exception, logs a warning, and the app continues running with
+> local-only WebSocket delivery and no caching.
 
 ---
 
@@ -411,7 +423,7 @@ Instance 2 _listen() receives message:
 ## File Reference
 
 | File | Layer | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | [chat.py](file:///home/egz-user/mano/backend/src/mano/presentation/websockets/chat.py) | Presentation | `ChatConnectionManager` + `RedisChatBridge` |
 | [chat_ws.py](file:///home/egz-user/mano/backend/src/mano/presentation/api/chat_ws.py) | Presentation | WebSocket endpoint `/ws/chat/{id}` |
 | [chat_schemas.py](file:///home/egz-user/mano/backend/src/mano/presentation/schemas/chat_schemas.py) | Presentation | Pydantic schemas for WS payloads |
