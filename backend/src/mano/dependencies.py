@@ -15,6 +15,7 @@ from mano.application.use_cases.auth_use_cases import AuthUseCases
 from mano.application.use_cases.availability_use_cases import AvailabilityUseCases
 from mano.application.use_cases.category_use_cases import CategoryUseCases
 from mano.application.use_cases.chat_use_cases import ChatUseCases
+from mano.application.use_cases.job_use_cases import JobUseCases
 from mano.application.use_cases.review_use_cases import ReviewUseCases
 from mano.application.use_cases.service_use_cases import ServiceUseCases
 from mano.application.use_cases.user_use_cases import UserUseCases
@@ -26,6 +27,7 @@ from mano.domain.services.auth_service import AuthService
 from mano.domain.services.availability_service import AvailabilityService
 from mano.domain.services.category_service import CategoryService
 from mano.domain.services.chat_service import ChatService
+from mano.domain.services.job_service import JobService
 from mano.domain.services.rating_service import RatingService
 from mano.domain.services.review_service import ReviewService
 from mano.domain.services.service_services import ServiceService
@@ -68,12 +70,14 @@ __all__ = [
     "get_review_service",
     "get_rating_service",
     "get_chat_service",
+    "get_job_service",
     "get_user_use_cases",
     "get_service_use_cases",
     "get_category_use_cases",
     "get_availability_use_cases",
     "get_review_use_cases",
     "get_chat_use_cases",
+    "get_job_use_cases",
     "get_current_user",
     "resolve_user_from_token",
     "setup_rate_limiting",
@@ -164,6 +168,12 @@ async def get_chat_service(session: AsyncSession = Depends(get_db_session)) -> C
     return factory.create_chat_service(chat_repository)
 
 
+async def get_job_service(session: AsyncSession = Depends(get_db_session)) -> JobService:
+    factory = InfrastructureServiceFactory()
+    job_repository = factory.create_job_repository(session)
+    return factory.create_job_service(job_repository)
+
+
 async def get_auth_use_cases(
     auth_service: AuthService = Depends(get_auth_service),
     email_sender: EmailSenderPort = Depends(get_email_sender),
@@ -228,6 +238,10 @@ async def get_review_use_cases(
 
 async def get_chat_use_cases(chat_service: ChatService = Depends(get_chat_service)) -> ChatUseCases:
     return ChatUseCases(chat_service)
+
+
+async def get_job_use_cases(job_service: JobService = Depends(get_job_service)) -> JobUseCases:
+    return JobUseCases(job_service)
 
 
 async def resolve_user_from_token(
