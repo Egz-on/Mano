@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 # Infrastructure imports are isolated to this module only
 from mano.infrastructure.database.models import (
+    JobModel,
     UserProfileModel,
     CategoryModel,
     ServiceModel,
@@ -272,4 +273,46 @@ async def create_test_availability(
         "end_time": availability.end_time,
         "is_available": availability.is_available,
         "specific_date": availability.specific_date,
+    }
+
+
+async def create_test_job(
+    db_session: AsyncSession,
+    customer_id: str,
+    category_id: str,
+    description: str = "Job description with enough detail",
+    latitude: float = 41.9981,
+    longitude: float = 21.4254,
+    address: str = "Job Street 1",
+    technician_id: str | None = None,
+    status: str = "pending",
+    **kwargs: Any,
+) -> dict[str, Any]:
+    """Create a test job in the database."""
+    job_id = str(uuid4())
+    job = JobModel(
+        id=job_id,
+        customer_id=customer_id,
+        technician_id=technician_id,
+        category_id=category_id,
+        description=description,
+        location=f"POINT ({longitude} {latitude})",
+        address=address,
+        status=status,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+        **kwargs,
+    )
+    db_session.add(job)
+    await db_session.commit()
+    await db_session.refresh(job)
+
+    return {
+        "id": job.id,
+        "customer_id": job.customer_id,
+        "technician_id": job.technician_id,
+        "category_id": job.category_id,
+        "description": job.description,
+        "address": job.address,
+        "status": job.status,
     }
