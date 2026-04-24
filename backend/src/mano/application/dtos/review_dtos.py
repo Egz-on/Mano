@@ -12,8 +12,6 @@ class CreatePublicReviewCommand:
     rating: int
     comment: str | None = None
     client_id: str | None = None
-    guest_name: str | None = None
-    guest_email: str | None = None
 
 
 @dataclass(frozen=True)

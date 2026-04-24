@@ -25,8 +25,6 @@ def _to_response(review: Review) -> ReviewResponseSchema:
         service_id=UUID(str(review.service_id)),
         rating=review.rating,
         comment=review.comment,
-        guest_name=review.guest_name,
-        guest_email=review.guest_email,
         status=review.status,
         moderated_by=UUID(str(review.moderated_by)) if review.moderated_by else None,
         moderation_notes=review.moderation_notes,
@@ -44,13 +42,11 @@ async def create_review(
     Create a new review.
     """
     command = CreatePublicReviewCommand(
-        client_id=str(payload.client_id) if payload.client_id else None,
+        client_id=str(payload.client_id),
         provider_id=str(payload.provider_id),
         service_id=str(payload.service_id),
         rating=payload.rating,
         comment=payload.comment,
-        guest_name=payload.guest_name,
-        guest_email=str(payload.guest_email) if payload.guest_email else None,
     )
     try:
         review = await use_case.create_public_review(command)

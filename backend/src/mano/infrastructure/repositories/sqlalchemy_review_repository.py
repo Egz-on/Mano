@@ -34,8 +34,6 @@ class SQLAlchemyReviewRepository(ReviewRepository):
             service_id=ServiceId(str(model.service_id)),
             rating=model.rating,
             comment=model.comment,
-            guest_name=model.guest_name,
-            guest_email=model.guest_email,
             status=model.status,
             created_at=model.created_at,
             updated_at=model.updated_at,
@@ -57,8 +55,6 @@ class SQLAlchemyReviewRepository(ReviewRepository):
             service_id=uuid_to_str(review.service_id),
             rating=review.rating,
             comment=review.comment,
-            guest_name=review.guest_name,
-            guest_email=review.guest_email,
             status=review.status,
             created_at=review.created_at,
             updated_at=review.updated_at,
@@ -98,8 +94,6 @@ class SQLAlchemyReviewRepository(ReviewRepository):
         model.service_id = uuid_to_str(review.service_id)
         model.rating = review.rating
         model.comment = review.comment
-        model.guest_name = review.guest_name
-        model.guest_email = review.guest_email
         model.status = review.status
         model.created_at = review.created_at
         model.updated_at = review.updated_at

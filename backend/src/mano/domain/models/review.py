@@ -60,8 +60,6 @@ class Review:
     updated_at: datetime = field(default_factory=datetime.now)
     moderated_by: UserId | None = None
     moderated_at: datetime | None = None
-    guest_name: str | None = None
-    guest_email: str | None = None
     moderation_notes: str | None = None
 
     def __post_init__(self) -> None:
@@ -80,18 +78,6 @@ class Review:
 
         if self.client_id.value == self.provider_id.value:
             raise ReviewValidationError("Client cannot review their own service")
-
-        if self.guest_name is not None:
-            guest_name = self.guest_name.strip()
-            if not guest_name:
-                raise ReviewValidationError("Guest name cannot be empty")
-            object.__setattr__(self, "guest_name", guest_name)
-
-        if self.guest_email is not None:
-            guest_email = self.guest_email.strip().lower()
-            if "@" not in guest_email:
-                raise ReviewValidationError("Guest email is invalid")
-            object.__setattr__(self, "guest_email", guest_email)
 
     @classmethod
     def create(
@@ -126,8 +112,6 @@ class Review:
         service_id: ServiceId,
         rating: int,
         comment: str,
-        guest_name: str | None = None,
-        guest_email: str | None = None,
         status: str = "approved",
     ) -> Review:
         """Create a public review from an authenticated or guest client."""
@@ -139,8 +123,6 @@ class Review:
             service_id=service_id,
             rating=rating,
             comment=comment,
-            guest_name=guest_name,
-            guest_email=guest_email,
             status=status,
             created_at=now,
             updated_at=now,
