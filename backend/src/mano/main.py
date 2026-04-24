@@ -22,6 +22,7 @@ from .presentation.api.v1.auth_route import router as auth_router
 from .presentation.api.v1.availability_route import router as availability_router
 from .presentation.api.v1.category_route import router as categories_router
 from .presentation.api.v1.chat_route import router as chat_router
+from .presentation.api.v1.job_route import router as jobs_router
 from .presentation.api.v1.review_route import router as reviews_router
 from .presentation.api.v1.service_image import router as service_images_router
 from .presentation.api.v1.service_route import router as services_router
@@ -69,6 +70,7 @@ def create_app() -> FastAPI:
     app.include_router(availability_router, prefix="/api/v1")
     app.include_router(reviews_router, prefix="/api/v1")
     app.include_router(chat_router, prefix="/api/v1")
+    app.include_router(jobs_router, prefix="/api/v1")
     app.include_router(chat_ws_router)
 
     structlog.configure(
