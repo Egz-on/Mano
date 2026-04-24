@@ -69,13 +69,6 @@ MODERN_PYTHON_RULES = {
         ],
         "mano": "Consider using match/case instead of if/elif with isinstance",
     },
-    "avoid_magic_numbers": {
-        "forbidden_patterns": [
-            # Numbers with 2+ digits not in variable names
-            r"[^a-zA-Z0-9_]\d{2,}[^a-zA-Z0-9_]",
-        ],
-        "mano": "Consider using constants or value objects instead of magic numbers",
-    },
     "use_str_enums": {
         "forbidden_patterns": [
             r"class.*Enum\):",  # Old-style Enum instead of StrEnum

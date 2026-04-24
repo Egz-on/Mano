@@ -2,11 +2,7 @@
 # https://github.com/DavidAnson/markdownlint
 
 # Line length
-MD013:
-  line_length: 120
-  code_blocks: false
-  tables: false
-  headings: false
+MD013: false
 
 # First line heading
 MD041: false
