@@ -19,6 +19,8 @@ from mano.application.use_cases.job_use_cases import JobUseCases
 from mano.application.use_cases.review_use_cases import ReviewUseCases
 from mano.application.use_cases.service_use_cases import ServiceUseCases
 from mano.application.use_cases.user_use_cases import UserUseCases
+from mano.domain.models.conversation import ConversationId
+from mano.domain.models.message import Message
 from mano.domain.models.user import PhoneNumber, UserAuthId, UserId, UserProfile, UserRole
 from mano.domain.repositories.auth_repository import AuthRepository
 from mano.domain.repositories.email_sender_port import EmailSenderPort
@@ -34,7 +36,7 @@ from mano.domain.services.service_services import ServiceService
 from mano.domain.services.user_service import UserService
 from mano.infrastructure.cache.connection import get_redis_client
 from mano.infrastructure.config.settings import Settings, get_settings
-from mano.infrastructure.database.connection import get_db_session
+from mano.infrastructure.database.connection import database, get_db_session
 from mano.infrastructure.external.smtp_email_sender import SMTPEmailSender
 from mano.infrastructure.factories import InfrastructureServiceFactory
 from mano.infrastructure.repositories.cloudinary_storage import CloudinaryStorageAdapter
@@ -53,6 +55,7 @@ from mano.infrastructure.security.rate_limiter import (
 )
 
 __all__ = [
+    "Settings",
     "get_db_session",
     "get_redis_client",
     "get_settings",
@@ -80,6 +83,9 @@ __all__ = [
     "get_job_use_cases",
     "get_current_user",
     "resolve_user_from_token",
+    "resolve_ws_user",
+    "ensure_ws_conversation_exists",
+    "create_ws_message",
     "setup_rate_limiting",
     "strict_auth_limiter",
     "moderate_auth_limiter",
@@ -332,3 +338,54 @@ def get_image_storage() -> IImageStoragePort:
 
 
 ImageStorageDep = Annotated[IImageStoragePort, Depends(get_image_storage)]
+
+
+# ---------------------------------------------------------------------------
+# WebSocket-scoped helpers
+# These run outside FastAPI's normal DI scope because WebSocket handlers
+# manage their own session lifecycle. Keeping them here (the composition
+# root) ensures the web layer never imports infrastructure directly.
+# ---------------------------------------------------------------------------
+
+
+async def resolve_ws_user(token: str, settings: Settings) -> UserProfile:
+    """Resolve a UserProfile from a raw WebSocket bearer token."""
+    async with database.session_factory()() as session:
+        factory = InfrastructureServiceFactory()
+        auth_repository = factory.create_auth_repository(session)
+        user_repository = factory.create_user_repository(session)
+        user_service = factory.create_user_service(user_repository, cache=None)
+        current_user = await resolve_user_from_token(
+            token,
+            settings=settings,
+            auth_repository=auth_repository,
+            user_service=user_service,
+        )
+        await session.commit()
+        return current_user
+
+
+async def ensure_ws_conversation_exists(conversation_id: str) -> None:
+    """Raise ConversationNotFoundError if the conversation does not exist."""
+    async with database.session_factory()() as session:
+        chat_service = ChatService(InfrastructureServiceFactory.create_chat_repository(session))
+        await chat_service.get_conversation(ConversationId(conversation_id))
+
+
+async def create_ws_message(
+    conversation_id: str,
+    sender_id: str,
+    content: str,
+) -> Message:
+    """Persist a chat message within its own scoped DB session."""
+    async with database.session_factory()() as session:
+        chat_service = ChatService(InfrastructureServiceFactory.create_chat_repository(session))
+        message = await chat_service.create_message(
+            Message.create(
+                conversation_id=ConversationId(conversation_id),
+                sender_id=UserId(sender_id),
+                content=content,
+            )
+        )
+        await session.commit()
+        return message

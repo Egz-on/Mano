@@ -7,43 +7,21 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, status
 
-from mano.dependencies import get_settings, resolve_user_from_token
+from mano.dependencies import (
+    Settings,
+    create_ws_message,
+    ensure_ws_conversation_exists,
+    get_settings,
+    resolve_ws_user,
+)
 from mano.domain.exceptions.chat_exceptions import ConversationNotFoundError, MessageValidationError
-from mano.domain.models.conversation import ConversationId
-from mano.domain.models.message import Message
 from mano.domain.models.user import UserId
-from mano.domain.services.chat_service import ChatService
-from mano.infrastructure.config.settings import Settings
-from mano.infrastructure.database.connection import database
-from mano.infrastructure.factories import InfrastructureServiceFactory
 from mano.presentation.api.v1.chat_route import _message_to_response
 from mano.presentation.schemas.chat_schemas import ChatSocketMessageSchema
 from mano.presentation.websockets.chat import chat_connection_manager, chat_redis_bridge
 
 router = APIRouter(tags=["chat"])
 logger = structlog.get_logger(__name__)
-
-
-async def _resolve_current_user(token: str, settings: Settings):
-    async with database.session_factory()() as session:
-        factory = InfrastructureServiceFactory()
-        auth_repository = factory.create_auth_repository(session)
-        user_repository = factory.create_user_repository(session)
-        user_service = factory.create_user_service(user_repository, cache=None)
-        current_user = await resolve_user_from_token(
-            token,
-            settings=settings,
-            auth_repository=auth_repository,
-            user_service=user_service,
-        )
-        await session.commit()
-        return current_user
-
-
-async def _ensure_conversation_exists(conversation_id: str) -> None:
-    async with database.session_factory()() as session:
-        chat_service = ChatService(InfrastructureServiceFactory.create_chat_repository(session))
-        await chat_service.get_conversation(ConversationId(conversation_id))
 
 
 @router.websocket("/ws/chat/{conversation_id}")
@@ -58,9 +36,9 @@ async def chat_websocket(
         return
 
     try:
-        current_user = await _resolve_current_user(token, settings)
+        current_user = await resolve_ws_user(token, settings)
         room_id = str(conversation_id)
-        await _ensure_conversation_exists(room_id)
+        await ensure_ws_conversation_exists(room_id)
     except ConversationNotFoundError as exc:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason=str(exc))
         return
@@ -82,16 +60,11 @@ async def chat_websocket(
                 continue
 
             try:
-                async with database.session_factory()() as session:
-                    chat_service = ChatService(InfrastructureServiceFactory.create_chat_repository(session))
-                    message = await chat_service.create_message(
-                        Message.create(
-                            conversation_id=ConversationId(room_id),
-                            sender_id=UserId(str(current_user.id)),
-                            content=content,
-                        )
-                    )
-                    await session.commit()
+                message = await create_ws_message(
+                    conversation_id=room_id,
+                    sender_id=str(UserId(str(current_user.id))),
+                    content=content,
+                )
             except ConversationNotFoundError as exc:
                 await websocket.send_json({"type": "error", "detail": str(exc)})
                 continue
