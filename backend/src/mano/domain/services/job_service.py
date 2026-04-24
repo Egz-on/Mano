@@ -15,18 +15,22 @@ class JobService:
         self._job_repository = job_repository
 
     async def create_job(self, job: Job) -> Job:
+        """Persist a new job."""
         return await self._job_repository.create_job(job)
 
     async def get_job_by_id(self, job_id: JobId) -> Job:
+        """Retrieve a job or raise JobNotFoundError."""
         job = await self._job_repository.get_job_by_id(job_id)
         if job is None:
             raise JobNotFoundError(f"Job {job_id} not found")
         return job
 
     async def update_job(self, job: Job) -> Job:
+        """Update an existing job."""
         return await self._job_repository.update_job(job)
 
     async def delete_job(self, job_id: JobId) -> None:
+        """Delete a job after verifying it exists."""
         await self.get_job_by_id(job_id)
         await self._job_repository.delete_job(job_id)
 
@@ -37,6 +41,7 @@ class JobService:
         technician_id: UserId | None = None,
         status: str | None = None,
     ) -> list[Job]:
+        """List jobs with optional filters."""
         return await self._job_repository.list_jobs(
             customer_id=customer_id,
             technician_id=technician_id,

@@ -29,12 +29,14 @@ class SQLAlchemyJobRepository(JobRepository):
 
     @staticmethod
     def _coordinates_from_location(raw_location: WKBElement | str | None) -> tuple[float, float]:
+        """Extract (latitude, longitude) from a PostGIS location value."""
         if raw_location is None:
             raise ValueError("Job location cannot be null")
         point = to_shape(raw_location) if isinstance(raw_location, WKBElement) else wkt.loads(raw_location)
         return float(point.y), float(point.x)
 
     def _location_from_coordinates(self, latitude: float, longitude: float) -> Any:
+        """Build a PostGIS-compatible location from lat/lon."""
         point = Point(longitude, latitude)
         bind = self._session.bind
         if bind is not None and bind.dialect.name == "sqlite":
@@ -43,6 +45,7 @@ class SQLAlchemyJobRepository(JobRepository):
 
     @classmethod
     def _to_domain(cls, model: JobModel) -> Job:
+        """Convert a SQLAlchemy JobModel to a domain Job entity."""
         latitude, longitude = cls._coordinates_from_location(model.location)
         return Job(
             id=JobId(str(model.id)),
@@ -67,6 +70,7 @@ class SQLAlchemyJobRepository(JobRepository):
         )
 
     def _apply_domain_to_model(self, job: Job, model: JobModel) -> None:
+        """Copy domain entity fields onto a persistent model."""
         model.customer_id = uuid_to_str(job.customer_id)
         model.technician_id = uuid_to_str(job.technician_id) if job.technician_id else None
         model.category_id = uuid_to_str(job.category_id)
@@ -85,6 +89,7 @@ class SQLAlchemyJobRepository(JobRepository):
         model.updated_at = job.updated_at
 
     async def create_job(self, job: Job) -> Job:
+        """Persist a new job and return the domain entity."""
         model = JobModel(
             id=uuid_to_str(job.id),
             customer_id=uuid_to_str(job.customer_id),
@@ -111,12 +116,14 @@ class SQLAlchemyJobRepository(JobRepository):
         return self._to_domain(model)
 
     async def get_job_by_id(self, job_id: JobId) -> Job | None:
+        """Find a job by ID; returns None when not found."""
         stmt = select(JobModel).where(JobModel.id == uuid_to_str(job_id))
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
     async def update_job(self, job: Job) -> Job:
+        """Update an existing job; raises JobNotFoundError if missing."""
         stmt = select(JobModel).where(JobModel.id == uuid_to_str(job.id))
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -129,6 +136,7 @@ class SQLAlchemyJobRepository(JobRepository):
         return self._to_domain(model)
 
     async def delete_job(self, job_id: JobId) -> None:
+        """Delete a job by ID."""
         stmt = delete(JobModel).where(JobModel.id == uuid_to_str(job_id))
         await self._session.execute(stmt)
 
@@ -139,6 +147,7 @@ class SQLAlchemyJobRepository(JobRepository):
         technician_id: UserId | None = None,
         status: str | None = None,
     ) -> list[Job]:
+        """List jobs with optional customer, technician, and status filters."""
         stmt = select(JobModel)
         if customer_id is not None:
             stmt = stmt.where(JobModel.customer_id == uuid_to_str(customer_id))
