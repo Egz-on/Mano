@@ -102,8 +102,24 @@ def _object_schema_name(object) -> str | None:
 def _render_item(type_, obj, autogen_context):
     """Add required imports for custom-rendered types."""
     module_name = getattr(obj.__class__, "__module__", "")
-    if type_ == "type" and ("geoalchemy2" in module_name or "Geometry" in repr(obj)):
-        autogen_context.imports.add("import geoalchemy2")
+    class_name = obj.__class__.__name__
+    if type_ == "type":
+        if module_name == "mano.infrastructure.database.models" and class_name == "GUID":
+            autogen_context.imports.add("from mano.infrastructure.database.models import GUID")
+            return "GUID()"
+        if module_name == "mano.infrastructure.database.models" and class_name == "LocationGeometry":
+            autogen_context.imports.add("import geoalchemy2")
+            return (
+                "geoalchemy2.types.Geometry("
+                'geometry_type="POINT", '
+                "srid=4326, "
+                "dimension=2, "
+                'from_text="ST_GeomFromEWKT", '
+                'name="geometry"'
+                ').with_variant(sa.Text(), "sqlite")'
+            )
+        if "geoalchemy2" in module_name or "Geometry" in repr(obj):
+            autogen_context.imports.add("import geoalchemy2")
     return False
 
 

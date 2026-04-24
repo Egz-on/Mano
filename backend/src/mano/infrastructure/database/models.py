@@ -34,6 +34,8 @@ class LocationGeometry(TypeDecorator):
     cache_ok = True
 
     def load_dialect_impl(self, dialect: Any) -> Any:
+        if dialect is None:
+            return Text()
         if dialect.name == "postgresql":
             return dialect.type_descriptor(Geometry(geometry_type="POINT", srid=4326))
         return dialect.type_descriptor(Text())
@@ -53,6 +55,8 @@ class GUID(TypeDecorator):
     cache_ok = True
 
     def load_dialect_impl(self, dialect: Any) -> Any:
+        if dialect is None:
+            return String(FieldLength.UUID_STRING)
         if dialect.name == "postgresql":
             return dialect.type_descriptor(PG_UUID())
         return dialect.type_descriptor(String(FieldLength.UUID_STRING))
