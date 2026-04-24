@@ -15,6 +15,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -106,6 +107,10 @@ class UserProfileModel(Base):
     location = Column(LOCATION_TYPE, nullable=True)
     approval_status = Column(String(20), default="pending", nullable=False)
     fcm_token = Column(String(500), nullable=True)
+
+    __table_args__ = (
+        Index("idx_user_profiles_location", "location", postgresql_using="gist"),
+    )
 
     services = relationship("ServiceModel", back_populates="provider", cascade="all, delete-orphan")
     reviews_received = relationship("ReviewModel", foreign_keys="ReviewModel.provider_id", back_populates="provider")
@@ -334,4 +339,5 @@ class JobModel(Base):
             ")",
             name="chk_job_status",
         ),
+        Index("idx_jobs_location", "location", postgresql_using="gist"),
     )
