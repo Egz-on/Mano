@@ -223,7 +223,7 @@
                             "_postman_previewlanguage": "json",
                             "header": [],
                             "cookie": [],
-                            "body": "{\n  \"id\": \"00000000-0000-0000-0000-000000000001\",\n  \"full_name\": \"Postman Tester\",\n  \"role\": \"admin\",\n  \"phone\": \"+38970000000\"\n}"
+                            "body": "{\n  \"id\": \"00000000-0000-0000-0000-000000000001\",\n  \"full_name\": \"Postman Tester\",\n  \"role\": \"admin\",\n  \"phone\": \"+393470000000\"\n}"
                         }
                     ]
                 },

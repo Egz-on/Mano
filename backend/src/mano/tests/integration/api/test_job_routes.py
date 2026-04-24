@@ -13,7 +13,7 @@ async def test_client_user(db_session):
         auth_user_id=str(uuid5(NAMESPACE_DNS, "mano:client@mano.com")),
         name="Job",
         surname="Client",
-        phone="+38970123459",
+        phone="+393470123459",
         role="client",
     )
 
@@ -25,7 +25,7 @@ async def test_provider_user(db_session):
         auth_user_id="00000000-0000-0000-0000-000000000001",
         name="Job",
         surname="Technician",
-        phone="+38970123456",
+        phone="+393470123456",
     )
 
 

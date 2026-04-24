@@ -279,13 +279,13 @@ async def resolve_user_from_token(
     name = demo_user["name"] if demo_user else token_info.get("name", "User")
     surname = demo_user["surname"] if demo_user else token_info.get("surname", "")
     role = UserRole(demo_user["role"] if demo_user else token_info.get("role", UserRole.client))
-    raw_phone = demo_user["phone"] if demo_user else "+38970000000"
+    raw_phone = demo_user["phone"] if demo_user else "+393470000000"
     city = demo_user["city"] if demo_user else None
 
     try:
         phone_vo = PhoneNumber(raw_phone)
     except ValueError:
-        phone_vo = PhoneNumber("+38970000000")
+        phone_vo = PhoneNumber("+393470000000")
 
     now = datetime.now(UTC)
     new_user = UserProfile(

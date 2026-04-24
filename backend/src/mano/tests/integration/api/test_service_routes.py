@@ -16,7 +16,7 @@ async def test_provider(db_session: "AsyncSession"):
         auth_user_id="00000000-0000-0000-0000-000000000001",
         name="Test",
         surname="Provider",
-        phone="+38970123456",
+        phone="+393470123456",
     )
     return provider
 
@@ -113,7 +113,7 @@ async def test_list_services_with_location_filter(
         auth_user_id="00000000-0000-0000-0000-000000000011",
         name="Near",
         surname="Provider",
-        phone="+38970123457",
+        phone="+393470123457",
         company_name="Near Services",
         location="POINT (21.4254 41.9981)",
     )
@@ -122,7 +122,7 @@ async def test_list_services_with_location_filter(
         auth_user_id="00000000-0000-0000-0000-000000000012",
         name="Far",
         surname="Provider",
-        phone="+38970123458",
+        phone="+393470123458",
         company_name="Far Services",
         location="POINT (20.4489 44.7866)",
     )

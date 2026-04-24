@@ -21,7 +21,7 @@ class UserRegisterRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128, description="Password (min 8 chars)")
     name: str = Field(..., min_length=1, max_length=255, description="First name")
     surname: str = Field(..., min_length=1, max_length=255, description="Last name")
-    phone: str = Field(..., description="Phone number (+38970123456)")
+    phone: str = Field(..., description="Phone number (+393401234567)")
     role: str = Field(default="provider", description="User role: provider")
 
     # Optional fields
@@ -31,10 +31,10 @@ class UserRegisterRequest(BaseModel):
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, v: str) -> str:
-        """Validate Macedonian phone format."""
-        pattern = r"^\+389[0-9]{8}$"
+        """Validate Italian phone format."""
+        pattern = r"^\+39[0-9]{10}$"
         if not re.match(pattern, v):
-            raise ValueError("Phone must be in format +38970123456")
+            raise ValueError("Phone must be in format +393401234567")
         return v
 
     @field_validator("role")
@@ -52,7 +52,7 @@ class UserRegisterRequest(BaseModel):
                 "password": "securepass123",
                 "name": "Arben",
                 "surname": "Ahmeti",
-                "phone": "+38970123456",
+                "phone": "+393401234567",
                 "role": "provider",
                 "city": "Tetovo",
             }
@@ -99,9 +99,9 @@ class UserProfileUpdateRequest(BaseModel):
         """Validate phone format if provided."""
         if v is None:
             return v
-        pattern = r"^\+389[0-9]{8}$"
+        pattern = r"^\+39[0-9]{10}$"
         if not re.match(pattern, v):
-            raise ValueError("Phone must be in format +38970123456")
+            raise ValueError("Phone must be in format +393401234567")
         return v
 
     model_config = {
@@ -109,7 +109,7 @@ class UserProfileUpdateRequest(BaseModel):
             "example": {
                 "name": "Arben",
                 "surname": "Ahmeti",
-                "phone": "+38970555444",
+                "phone": "+393405554440",
                 "city": "Tetovo",
                 "bio": "Usta me përvojë 10 vjeçare",
                 "years_of_experience": 10,
@@ -215,7 +215,7 @@ class UserProfileResponse(BaseModel):
                 "auth_user_id": "987e6543-e21b-98d7-b654-321098765432",
                 "name": "Arben",
                 "surname": "Ahmeti",
-                "phone": "+38970123456",
+                "phone": "+393401234567",
                 "avatar_url": "https://example.com/avatar.jpg",
                 "bio": "Usta me përvojë",
                 "role": "provider",

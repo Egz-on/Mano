@@ -17,7 +17,7 @@ async def test_provider(db_session: "AsyncSession"):
         auth_user_id="00000000-0000-0000-0000-000000000001",
         name="Test",
         surname="Provider",
-        phone="+38970123456",
+        phone="+393470123456",
     )
 
 

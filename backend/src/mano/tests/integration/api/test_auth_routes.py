@@ -11,7 +11,7 @@ async def test_register_and_login_flow(async_client: AsyncClient) -> None:
         "password": "StrongPass123",
         "name": "New",
         "surname": "User",
-        "phone": "+38970123456",
+        "phone": "+393470123456",
         "role": "client",
     }
 
@@ -60,7 +60,7 @@ async def test_forgot_and_reset_password_flow(async_client: AsyncClient) -> None
         "password": "InitialPass123",
         "name": "Reset",
         "surname": "User",
-        "phone": "+38970987654",
+        "phone": "+393470987654",
     }
     register_response = await async_client.post("/api/v1/auth/register", json=register_payload)
     assert register_response.status_code == 201

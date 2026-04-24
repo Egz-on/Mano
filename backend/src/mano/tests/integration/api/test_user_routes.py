@@ -18,7 +18,7 @@ async def test_user(db_session: "AsyncSession"):
         auth_user_id=auth_user_id,
         name="Test",
         surname="User",
-        phone="+38970123456",
+        phone="+393470123456",
         role="client",
     )
     return user

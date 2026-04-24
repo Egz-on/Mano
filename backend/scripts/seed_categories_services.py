@@ -78,7 +78,7 @@ async def seed_data():
         provider_map = {p.phone: p for p in providers}
 
         services_data = []
-        if "+38970222333" in provider_map:
+        if "+393470222333" in provider_map:
             services_data.append(
                 {
                     "title": "Electrical Wiring Repair",
@@ -87,7 +87,7 @@ async def seed_data():
                     "currency": "MKD",
                     "pricing_type": "hourly",
                     "category_id": category_map["electrical"].id,
-                    "provider_id": provider_map["+38970222333"].id,
+                    "provider_id": provider_map["+393470222333"].id,
                     "service_areas": ["Skopje", "Tetovo"],
                     "images": [
                         "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=2069&auto=format&fit=crop"
@@ -95,7 +95,7 @@ async def seed_data():
                 }
             )
 
-        if "+38970333444" in provider_map:
+        if "+393470333444" in provider_map:
             services_data.append(
                 {
                     "title": "Full Home Deep Cleaning",
@@ -104,7 +104,7 @@ async def seed_data():
                     "currency": "MKD",
                     "pricing_type": "fixed",
                     "category_id": category_map["cleaning"].id,
-                    "provider_id": provider_map["+38970333444"].id,
+                    "provider_id": provider_map["+393470333444"].id,
                     "service_areas": ["Bitola", "Ohrid"],
                     "images": [
                         "https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=2070&auto=format&fit=crop"
@@ -112,7 +112,7 @@ async def seed_data():
                 }
             )
 
-        if "+38970444555" in provider_map:
+        if "+393470444555" in provider_map:
             services_data.append(
                 {
                     "title": "Emergency Plumbing & Pipe Repair",
@@ -121,7 +121,7 @@ async def seed_data():
                     "currency": "MKD",
                     "pricing_type": "hourly",
                     "category_id": category_map["plumbing"].id,
-                    "provider_id": provider_map["+38970444555"].id,
+                    "provider_id": provider_map["+393470444555"].id,
                     "service_areas": ["Ohrid", "Skopje"],
                     "images": [
                         "https://images.unsplash.com/photo-1607472586893-edb57cbca132?q=80&w=2070&auto=format&fit=crop"

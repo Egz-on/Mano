@@ -25,10 +25,10 @@ class PhoneNumber:
     value: str
 
     def __post_init__(self) -> None:
-        if not self.value.startswith("+389"):
-            raise ValueError("Phone must start with +389")
-        if len(self.value) != 12:
-            raise ValueError("Phone must be 12 characters (+38970123456)")
+        if not self.value.startswith("+39"):
+            raise ValueError("Phone must start with +39")
+        if len(self.value) != 13:
+            raise ValueError("Phone must be 13 characters (+393401234567)")
 
     def __str__(self) -> str:
         return self.value

@@ -39,7 +39,7 @@ async def seed_data():
             admin_user.role = str(UserRole.admin)
             admin_user.name = "System"
             admin_user.surname = "Admin"
-            admin_user.phone = "+38970111222"
+            admin_user.phone = "+393470111222"
         else:
             print("Admin user not found. Creating...")
             admin_user = UserProfileModel(
@@ -47,7 +47,7 @@ async def seed_data():
                 auth_user_id=ADMIN_AUTH_ID,
                 name="System",
                 surname="Admin",
-                phone="+38970111222",
+                phone="+393470111222",
                 role=str(UserRole.admin),
                 city="Skopje",
                 created_at=now,
@@ -61,7 +61,7 @@ async def seed_data():
             {
                 "name": "Arben",
                 "surname": "Hoxha",
-                "phone": "+38970222333",
+                "phone": "+393470222333",
                 "city": "Skopje",
                 "company_name": "Hoxha Electric",
                 "years_of_experience": 15,
@@ -71,7 +71,7 @@ async def seed_data():
             {
                 "name": "Elena",
                 "surname": "Petrovska",
-                "phone": "+38970333444",
+                "phone": "+393470333444",
                 "city": "Bitola",
                 "company_name": "Elena Clean",
                 "years_of_experience": 5,
@@ -81,7 +81,7 @@ async def seed_data():
             {
                 "name": "Marko",
                 "surname": "Stojanovic",
-                "phone": "+38970444555",
+                "phone": "+393470444555",
                 "city": "Ohrid",
                 "company_name": "Marko Plumber",
                 "years_of_experience": 8,
@@ -123,14 +123,14 @@ async def seed_data():
             {
                 "name": "Jeton",
                 "surname": "Mazllami",
-                "phone": "+38970555666",
+                "phone": "+393470555666",
                 "city": "Tetovo",
                 "role": str(UserRole.client),
             },
             {
                 "name": "Ana",
                 "surname": "Nikolovska",
-                "phone": "+38970666777",
+                "phone": "+393470666777",
                 "city": "Skopje",
                 "role": str(UserRole.client),
             },

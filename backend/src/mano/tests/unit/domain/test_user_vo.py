@@ -15,28 +15,28 @@ def test_auth_user_id_default_factory():
     assert uuid.UUID(fid.value)
 
 
-def test_phone_number_success():
-    phone = PhoneNumber("+38970123456")
-    assert str(phone) == "+38970123456"
+def test_phone_number_valid() -> None:
+    phone = PhoneNumber("+393401234567")
+    assert str(phone) == "+393401234567"
 
 
-def test_phone_number_invalid_prefix():
-    with pytest.raises(ValueError, match=r"Phone must start with \+389"):
-        PhoneNumber("+35570123456")
+def test_phone_number_invalid_prefix() -> None:
+    with pytest.raises(ValueError, match=r"Phone must start with \+39"):
+        PhoneNumber("+1234567890123")
 
 
-def test_phone_number_invalid_length():
-    with pytest.raises(ValueError, match="Phone must be 12 characters"):
-        PhoneNumber("+389701234")
+def test_phone_number_invalid_length() -> None:
+    with pytest.raises(ValueError, match="Phone must be 13 characters"):
+        PhoneNumber("+393401234")
 
 
 def test_user_profile_role_checks():
     profile = UserProfile(
         id=UserId(),
         auth_user_id=UserAuthId(),
-        name="Test",
-        surname="User",
-        phone="+38970111222",
+        name="Arben",
+        surname="Ahmeti",
+        phone="+393401112220",
         role=UserRole.provider,
     )
     assert profile.is_provider() is True
@@ -50,7 +50,7 @@ def test_user_profile_get_display_name():
         auth_user_id=UserAuthId(),
         name="John",
         surname="Doe",
-        phone="+38970111222",
+        phone="+393401112220",
         role=UserRole.provider,
         company_name="Doe Repair",
     )
@@ -66,6 +66,11 @@ def replace_role(profile: UserProfile, role: UserRole) -> UserProfile:
     return replace(profile, role=role)
 
 
-def test_user_profile_complete_check():
-    profile = UserProfile(id=UserId(), auth_user_id=UserAuthId(), name="John", surname="Doe", phone="+38970111222")
+def test_user_profile_full_name() -> None:
+    profile = UserProfile(id=UserId(), auth_user_id=UserAuthId(), name="John", surname="Doe", phone="+393401112220")
+    assert profile.full_name == "John Doe"
+
+
+def test_user_profile_full_name_no_surname() -> None:
+    profile = UserProfile(id=UserId(), auth_user_id=UserAuthId(), name="John", surname="", phone="+393401112220")
     assert profile.has_complete_profile() is True

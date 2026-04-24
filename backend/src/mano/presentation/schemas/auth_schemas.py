@@ -17,7 +17,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
     name: str = Field(..., min_length=1, max_length=255)
     surname: str = Field(..., min_length=1, max_length=255)
-    phone: str = Field(..., min_length=12, max_length=20, description="Phone in +389XXXXXXXX format")
+    phone: str = Field(..., min_length=12, max_length=20, description="Phone in +39XXXXXXXXXX format")
     role: Literal["client", "provider"] = "client"
     city: str | None = Field(default=None, max_length=100)
     company_name: str | None = Field(default=None, max_length=255)

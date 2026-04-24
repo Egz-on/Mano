@@ -23,7 +23,7 @@ from mano.infrastructure.database.models import (
 
 # Default test constants
 DEFAULT_AUTH_USER_ID = "00000000-0000-0000-0000-000000000001"
-DEFAULT_PHONE = "+38970123456"
+DEFAULT_PHONE = "+393470123456"
 DEFAULT_CURRENCY = "MKD"
 DEFAULT_PRICING_TYPE = "fixed"
 
