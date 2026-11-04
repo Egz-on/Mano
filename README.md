@@ -341,4 +341,4 @@ Built with ❤️ using:
 
 **[⬆ Back to Top](#-mano)**
 
-Made with ❤️ by the Mano Team
+
